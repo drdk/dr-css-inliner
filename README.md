@@ -1,7 +1,7 @@
-dr-inview-css-inliner
-=====================
+dr-inview-css
+=============
 
-PhantomJS script to inline CSS for the visible HTML of a page by given viewport size.
+PhantomJS script to extract the needed CSS for the visible HTML of a page by given viewport size.
 
 ##Usage:
 
