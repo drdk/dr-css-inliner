@@ -1,10 +1,10 @@
 dr-inview-css
 =============
 
-PhantomJS script to extract the needed CSS for the visible HTML of a page by given viewport size.
+PhantomJS script to extract above-the-fold CSS for a webpage.
 
-Perceived increased pageload speed can be achieved by inlining the CSS for above-the-fold content - circumventing blocking stylesheets.
-This script will help extract the CSS needed. 
+Inlining CSS for above-the-fold content (and loading stylesheets in a non-blocking manner) will make pages render instantly.
+This script will help extract the CSS needed.
 
 As proposed by the Google Pagespeed team:
 [Optimizing the Critical Rendering Path for Instant Mobile Websites - Velocity SC - 2013](https://www.youtube.com/watch?v=YV1nKLWoARQ) 
@@ -12,16 +12,17 @@ As proposed by the Google Pagespeed team:
 ##Usage:
 
 ```
-phantomjs index.js [arguments]
+phantomjs index.js width height [output]
 ```
 
 ####Arguments:
 
-* `width` - The desired viewport width of the webpage.
-* `height` - The desired viewport height og the webpage.
+* `width` - The desired width of the viewport.
+* `height` - The desired height of the viewport.
 * `output` - (Optional) Path to write output to. If not supplied output is just logged to console.
 
 #####Example:
+
 ```
-phantomjs index.js http://www.mydomain.com 640 480 inlined.css
+phantomjs index.js http://www.mydomain.com/index.html 640 480 inline.css
 ```
