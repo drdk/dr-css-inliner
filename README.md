@@ -3,7 +3,7 @@ dr-inview-css
 
 PhantomJS script to extract the needed CSS for the visible HTML of a page by given viewport size.
 
-Percieved increased pageload speed can be achieved by inlining the CSS for above-the-fold content - circumventing blocking stylesheets.
+Perceived increased pageload speed can be achieved by inlining the CSS for above-the-fold content - circumventing blocking stylesheets.
 This script will help extract the CSS needed. 
 
 As proposed by the Google Pagespeed team:
