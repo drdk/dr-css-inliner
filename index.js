@@ -32,7 +32,7 @@ page.onCallback = function (response) {
 					fs.write(outputpath, response.data);
 				}
 				else {
-					console.log(response.message, response.data);
+					console.log(response.data);
 				}
 				phantom.exit();
 				break;
