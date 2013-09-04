@@ -47,7 +47,7 @@ page.onCallback = function (response) {
 
 page.open(url, function () {
 	
-	var injection = page.injectJs("./lib/inlineCSS.js");
+	var injection = page.injectJs("./lib/extractCSS.js");
 	if (injection) {
 		/*
 		setTimeout(function () {
