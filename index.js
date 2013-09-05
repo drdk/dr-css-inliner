@@ -3,8 +3,8 @@ var fs = require("fs"),
 	args = require("system").args;
 
 var	url = args[1],
-	width = args[2],
-	height = args[3],
+	width = args[2] || 1200,
+	height = args[3] || 800,
 	outputpath = args[4] || null;
 
 var page = webpage.create();
@@ -22,40 +22,25 @@ page.clipRect = {
 };
 
 page.onCallback = function (response) {
-	
-	if (response) {
 
-		switch (response.message) {
-			case "complete":
-				if (outputpath) {
-					console.log("writing to", outputpath);
-					fs.write(outputpath, response.data);
-				}
-				else {
-					console.log(response.data);
-				}
-				phantom.exit();
-				break;
-			default:
-				console.log(response.message, response.data);
-				break;
+	if (response && response.message == "complete") {
+
+		if (outputpath) {
+			console.log("Writing to", outputpath);
+			fs.write(outputpath, response.data);
 		}
+		else {
+			console.log(response.data);
+		}
+		phantom.exit();
 
 	}
 	
 };
 
 page.open(url, function () {
-	
 	var injection = page.injectJs("./lib/extractCSS.js");
-	if (injection) {
-		/*
-		setTimeout(function () {
-			phantom.exit();
-		}, 10000);
-		*/
-	}
-	else {
+	if (!injection) {
 		phantom.exit();
 	}
 	
