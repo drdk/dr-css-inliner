@@ -3,22 +3,22 @@ var fs = require("fs"),
 	args = require("system").args;
 
 var	url = args[1],
-	width = args[2] || 1200,
-	height = args[3] || 800,
+	width = args[2] || null,
+	height = args[3] || null,
 	outputpath = args[4] || null;
+
+if (width) {
+	width = parseInt(width);
+}
+if (height) {
+	height = parseInt(height);
+}
 
 var page = webpage.create();
 
 page.viewportSize = {
-	width: width,
-	height: height
-};
-
-page.clipRect = { 
-	top: 0,
-	left: 0,
-	width: width,
-	height: height
+	width: width || 1200,
+	height: height || 800
 };
 
 page.onCallback = function (response) {
@@ -39,6 +39,13 @@ page.onCallback = function (response) {
 };
 
 page.open(url, function () {
+
+	if (!height) {
+		page.evaluate(function () {
+			window.resizeBy(0, document.body.offsetHeight - window.innerHeight);
+		});
+	}
+
 	var injection = page.injectJs("./lib/extractCSS.js");
 	if (!injection) {
 		phantom.exit();
