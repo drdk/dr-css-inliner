@@ -12,13 +12,14 @@ As proposed by the Google Pagespeed team:
 ##Usage:
 
 ```
-phantomjs index.js width height [output]
+phantomjs index.js url [width] [height] [output]
 ```
 
 ####Arguments:
 
-* `width` - The desired width of the viewport.
-* `height` - The desired height of the viewport.
+* `url` - The url of the webpage to load.
+* `width` - (Optional) The desired width of the viewport. Default is 1200px.
+* `height` - (Optional) The desired height of the viewport. Default is document height.
 * `output` - (Optional) Path to write output to. If not supplied output is just logged to console.
 
 #####Example:
