@@ -1,17 +1,48 @@
 var fs = require("fs"),
 	webpage = require("webpage"),
-	args = require("system").args;
+	_args = require("system").args;
 
-var	url = args[1],
-	width = args[2] || null,
-	height = args[3] || null,
-	outputpath = args[4] || null;
+var	args = [].slice.call(_args, 1),
+	url = args.shift(),
+	value, width, height, matchMQ;
 
-if (width) {
-	width = parseInt(width);
-}
-if (height) {
-	height = parseInt(height);
+while (args.length) {
+	switch (args.shift()) {
+		
+		case "-w":
+		case "--width":
+			value = (args.length) ? args.shift() : "";
+			if (value.match(/^\d+$/)) {
+				width = value;
+			}
+			else {
+				console.error("Expected numeric value for 'width' option.");
+				phantom.exit();
+			}
+			break;
+		
+		case "-h":
+		case "--height":
+			value = (args.length) ? args.shift() : "";
+			if (value.match(/^\d+$/)) {
+				height = value;
+			}
+			else {
+				console.error("Expected numeric value for 'height' option.");
+				phantom.exit();
+			}
+			break;
+
+		case "-m":
+		case "--match-media-queries":
+			matchMQ = true;
+			break;
+
+		default:
+			console.error("Unknown option.");
+			phantom.exit();
+			break;
+	}
 }
 
 var page = webpage.create();
@@ -23,22 +54,18 @@ page.viewportSize = {
 
 page.onCallback = function (response) {
 
-	if (response && response.message == "complete") {
-
-		if (outputpath) {
-			console.log("Writing to", outputpath);
-			fs.write(outputpath, response.data);
-		}
-		else {
-			console.log(response.data);
-		}
-		phantom.exit();
-
-	}
+	console.log(response);
+	phantom.exit();
 	
 };
 
 page.open(url, function () {
+
+	if (matchMQ) {
+		page.evaluate(function () {
+			window.extractCSSMatchMediaQueries = true;
+		});
+	}
 
 	if (!height) {
 		page.evaluate(function () {

@@ -9,21 +9,31 @@ This script will help extract the CSS needed.
 As proposed by the Google Pagespeed team:
 [Optimizing the Critical Rendering Path for Instant Mobile Websites - Velocity SC - 2013](https://www.youtube.com/watch?v=YV1nKLWoARQ) 
 
-##Usage:
+## Usage:
 
 ```
-phantomjs index.js url [width] [height] [output]
+phantomjs index.js <url> [options]
 ```
 
-####Arguments:
+#### Options:
 
-* `url` - The url of the webpage to load.
-* `width` - (Optional) The desired width of the viewport. Default is 1200px.
-* `height` - (Optional) The desired height of the viewport. Default is document height.
-* `output` - (Optional) Path to write output to. If not supplied output is just logged to console.
+* `-w, --width [value]` - Determines the width of the viewport. Defaults to 1200.
+* `-h, --height [value]` - Determines the above-the-fold heigth. Defaults to the actual document height.
+* `-m, --match-media-queries` - Omit media queries that don't match the defined width.
 
-#####Example:
+##### Examples:
 
+Only extract the needed above-the-fold CSS for smaller devices:
 ```
-phantomjs index.js http://www.mydomain.com/index.html 640 480 inline.css
+phantomjs index.js http://www.mydomain.com/index.html -w 350 -h 480 -m > mobile.css
+```
+
+Extract all needed CSS for the above-the-fold content on all devices (default 1200px and smaller):
+```
+phantomjs index.js http://www.mydomain.com/index.html -h 800 > page-top.css
+```
+
+Extract all needed CSS for webpage:
+```
+phantomjs index.js http://www.mydomain.com/index.html > page.css
 ```
