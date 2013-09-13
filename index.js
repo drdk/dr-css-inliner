@@ -32,6 +32,18 @@ while (args.length) {
 				phantom.exit();
 			}
 			break;
+		
+		case "-o":
+		case "--output":
+			value = (args.length) ? args.shift() : "";
+			if (value) {
+				output = value;
+			}
+			else {
+				console.error("Expected a string for 'output' option.");
+				phantom.exit();
+			}
+			break;
 
 		case "-m":
 		case "--match-media-queries":
@@ -54,7 +66,13 @@ page.viewportSize = {
 
 page.onCallback = function (response) {
 
-	console.log(response);
+	if (output) {
+		console.log("Writing output to:", output);
+		fs.write(output, response);
+	}
+	else {
+		console.log(response);
+	}
 	phantom.exit();
 	
 };
