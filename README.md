@@ -1,5 +1,5 @@
-dr-inview-css
-=============
+dr-css-extractor
+================
 
 PhantomJS script to extract above-the-fold CSS for a webpage.
 
