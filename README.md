@@ -17,9 +17,9 @@ phantomjs index.js <url> [options]
 
 #### Options:
 
-* `-o, --output [string]` - Path to write outpout to. Defaults to `STDOUT`.
+* `-o, --output [string]` - Path to write output to. Defaults to `STDOUT`.
 * `-w, --width [value]` - Determines the width of the viewport. Defaults to 1200.
-* `-h, --height [value]` - Determines the above-the-fold heigth. Defaults to the actual document height.
+* `-h, --height [value]` - Determines the above-the-fold height. Defaults to the actual document height.
 * `-m, --match-media-queries` - Omit media queries that don't match the defined width.
 
 ##### Examples:
