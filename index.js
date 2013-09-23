@@ -4,7 +4,7 @@ var fs = require("fs"),
 
 var	args = [].slice.call(_args, 1),
 	url = args.shift(),
-	value, width, height, matchMQ;
+	value, width = 1200, height = 0, matchMQ;
 
 while (args.length) {
 	switch (args.shift()) {
@@ -60,7 +60,7 @@ while (args.length) {
 var page = webpage.create();
 
 page.viewportSize = {
-	width: width || 1200,
+	width: width,
 	height: height || 800
 };
 
@@ -86,14 +86,18 @@ page.open(url, function () {
 	}
 
 	if (!height) {
-		page.evaluate(function () {
-			window.resizeBy(0, document.body.offsetHeight - window.innerHeight);
+		var _height = page.evaluate(function () {
+			return document.body.offsetHeight;
 		});
+		page.viewportSize = {
+			width: width,
+			height: _height
+		};
 	}
 
 	var injection = page.injectJs("./lib/extractCSS.js");
 	if (!injection) {
 		phantom.exit();
 	}
-	
+
 });
