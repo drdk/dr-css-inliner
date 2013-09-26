@@ -4,7 +4,11 @@ var fs = require("fs"),
 
 var	args = [].slice.call(_args, 1),
 	url = args.shift(),
-	value, width = 1200, height = 0, matchMQ;
+	value,
+	width = 1200,
+	height = 0,
+	matchMQ,
+	required;
 
 while (args.length) {
 	switch (args.shift()) {
@@ -32,6 +36,23 @@ while (args.length) {
 				phantom.exit();
 			}
 			break;
+
+		case "-m":
+		case "--match-media-queries":
+			matchMQ = true;
+			break;
+		
+		case "-r":
+		case "--required":
+			value = (args.length) ? args.shift() : "";
+			if (value) {
+				required = value.split(/\s*,\s*/);
+			}
+			else {
+				console.error("Expected a string for 'required' option.");
+				phantom.exit();
+			}
+			break;
 		
 		case "-o":
 		case "--output":
@@ -43,11 +64,6 @@ while (args.length) {
 				console.error("Expected a string for 'output' option.");
 				phantom.exit();
 			}
-			break;
-
-		case "-m":
-		case "--match-media-queries":
-			matchMQ = true;
 			break;
 
 		default:
@@ -79,10 +95,20 @@ page.onCallback = function (response) {
 
 page.open(url, function () {
 
+	var options = {};
+
 	if (matchMQ) {
-		page.evaluate(function () {
-			window.extractCSSMatchMediaQueries = true;
-		});
+		options.matchMQ = true;
+	}
+
+	if (required) {
+		options.required = required;
+	}
+
+	if (Object.keys(options).length) {
+		page.evaluate(function (options) {
+			window.extractCSSOptions = options;
+		}, options);
 	}
 
 	if (!height) {
