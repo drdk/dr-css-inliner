@@ -20,6 +20,7 @@ phantomjs index.js <url> [options]
 * `-o, --output [string]` - Path to write output to. Defaults to `STDOUT`.
 * `-w, --width [value]` - Determines the width of the viewport. Defaults to 1200.
 * `-h, --height [value]` - Determines the above-the-fold height. Defaults to the actual document height.
+* `-r, --required [string]` - Force inclusion of required selectors in the form of a comma-separated selector string. Defaults to no required selectors.
 * `-m, --match-media-queries` - Omit media queries that don't match the defined width.
 
 ##### Examples:
@@ -34,7 +35,7 @@ Extract all needed CSS for the above-the-fold content on all devices (default 12
 phantomjs index.js http://www.mydomain.com/index.html -h 800 -o page-top.css
 ```
 
-Extract all needed CSS for webpage:
+Extract all needed CSS for webpage with required selectors:
 ```
-phantomjs index.js http://www.mydomain.com/index.html -o page.css
+phantomjs index.js http://www.mydomain.com/index.html -r ".foo > .bar, .baz" -o page.css
 ```
