@@ -2,7 +2,7 @@ var fs = require("fs"),
 	webpage = require("webpage"),
 	system = require("system");
 
-var	args = [].slice.call(system.args, 1), arg,
+var args = [].slice.call(system.args, 1), arg,
 	html, url, fakeUrl,
 	value,
 	width = 1200,
@@ -14,13 +14,13 @@ var	args = [].slice.call(system.args, 1), arg,
 	cssToken,
 	exposeCSS;
 
-	html = system.stdin.read();
-	system.stdin.close();
+html = system.stdin.read();
+system.stdin.close();
 
 while (args.length) {
 	arg = args.shift();
 	switch (arg) {
-		
+
 		case "-f":
 		case "--fake-url":
 			value = (args.length) ? args.shift() : "";
@@ -45,7 +45,7 @@ while (args.length) {
 				fail("Expected numeric value for 'width' option");
 			}
 			break;
-		
+
 		case "-h":
 		case "--height":
 			value = (args.length) ? args.shift() : "";
@@ -61,7 +61,7 @@ while (args.length) {
 		case "--match-media-queries":
 			matchMQ = true;
 			break;
-		
+
 		case "-r":
 		case "--required-selectors":
 			value = (args.length) ? args.shift() : "";
@@ -112,7 +112,7 @@ while (args.length) {
 			break;
 
 		default:
-			if (!url && !arg.match(/^--?[a-z]/)){
+			if (!url && !arg.match(/^--?[a-z]/)) {
 				url = arg;
 			}
 			else {
@@ -120,8 +120,8 @@ while (args.length) {
 			}
 			break;
 	}
+	
 }
-
 
 var page = webpage.create();
 
@@ -139,12 +139,28 @@ page.onCallback = function (response) {
 		else {
 			result = inlineCSS(html, response.css);
 		}
-		console.log(result);
+		system.stdout.write(result);
 		phantom.exit();
 	}
 	else {
-		console.log(response);
+		system.stdout.write(response);
+		phantom.exit();
 	}
+};
+
+page.onError = function (msg, trace) {
+	var msgStack = ['ERROR: ' + msg];
+	if (trace && trace.length) {
+		msgStack.push('TRACE:');
+		trace.forEach(function (t) {
+			msgStack.push(' -> ' + t.file + ': ' + t.line + (t.function ? ' (in function "' + t.function + '")' : ''));
+		});
+	}
+	fail(msgStack.join('\n'));
+};
+
+page.onConsoleMessage = function (msg, lineNum, sourceId) {
+	console.log('CONSOLE: ' + msg + ' (from line #' + lineNum + ' in "' + sourceId + '")');
 };
 
 page.onLoadFinished = function () {
@@ -176,10 +192,11 @@ page.onLoadFinished = function () {
 	}
 
 	var scriptPath = phantom.libraryPath + "/extractCSS.js";
+
 	if (!fs.isFile(scriptPath)) {
 		fail("Unable to locate script at: " + scriptPath);
 	}
-	
+
 	var injection = page.injectJs(scriptPath);
 	if (!injection) {
 		fail("Unable to inject script in page");
@@ -215,8 +232,9 @@ function inlineCSS(html, css) {
 				string = cssToken;
 			}
 			return string;
-		};
-		links = [];
+		},
+		links = [],
+		stylesheets = [];
 
 	if (!cssToken) {
 		cssToken = "<!-- inline CSS insertion token -->";
@@ -227,11 +245,11 @@ function inlineCSS(html, css) {
 		return insertToken();
 	});
 
-	var stylesheets = links.map(function (link) {
+	stylesheets = links.map(function (link) {
 		var urlMatch = link.match(/href="([^"]+)"/),
 			mediaMatch = link.match(/media="([^"]+)"/),
-		url = urlMatch && urlMatch[1],
-		media = mediaMatch && mediaMatch[1];
+			url = urlMatch && urlMatch[1],
+			media = mediaMatch && mediaMatch[1];
 
 		return { url: url, media: media };
 	});
@@ -259,11 +277,11 @@ function inlineCSS(html, css) {
 
 }
 
-function fail (message) {
+function fail(message) {
 	system.stderr.write(message);
 	phantom.exit();
 }
 
-function parseString (value) {
+function parseString(value) {
 	return (value.match(/^(["']).*\1$/)) ? JSON.parse(value) : value;
 }
