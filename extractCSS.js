@@ -26,22 +26,34 @@
 		});
 		left = mediaStylesheets.slice(0);
 
-		var base = global.location.href.replace(/\/[^/]+$/, "/");
+		var base = global.location.href.replace(/\/[^/]+$/, "/"),
+			host = global.location.protocol + "//" + global.location.host;
 
 		mediaStylesheets.forEach(function (stylesheet) {
-			fetchStylesheet(stylesheet.href, function (text) {
+			if (stylesheet.href.indexOf(host) == 0) {
+				fetchStylesheet(stylesheet.href, function (text) {
+					var index = left.indexOf(stylesheet);
+					if (index > -1) {
+						left.splice(index, 1);
+					}
+					text = text.replace(/\/\*[\s\S]+?\*\//g, "").replace(/[\n\r]+/g, "").replace(/url\((["']|)(\.\.\/[^"'\(\)]+)\1\)/g, function (m, quote, url) {
+						return "url(\"" + pathRelativeToPage(base, stylesheet.href, url) + "\")";
+					});
+					stylesheets.push(text);
+					if (left.length == 0) {
+						complete();
+					}
+				});
+			}
+			else {
 				var index = left.indexOf(stylesheet);
 				if (index > -1) {
 					left.splice(index, 1);
 				}
-				text = text.replace(/\/\*[\s\S]+?\*\//g, "").replace(/[\n\r]+/g, "").replace(/url\((["']|)(\.\.\/[^"'\(\)]+)\1\)/g, function (m, quote, url) {
-					return "url(\"" + pathRelativeToPage(base, stylesheet.href, url) + "\")";
-				});
-				stylesheets.push(text);
 				if (left.length == 0) {
 					complete();
 				}
-			});
+			}
 		});
 
 		function complete () {
@@ -59,15 +71,24 @@
 			}).join("");
 			
 			if (typeof global.callPhantom === 'function') {
-				global.callPhantom(CSS);
+				global.callPhantom({css: CSS});
 			}
 			else if (global.console) {
-				console.log(CSS);
+				console.log({css: CSS});
 			}
 			
 		}
 
 	}
+
+	function log (message) {
+		if (typeof global.callPhantom === 'function') {
+			global.callPhantom(message);
+		}
+		else if (global.console) {
+			console.log(message);
+		}
+	} 
 
 	function outputRules (rules) {
 		return rules.map(function (rule) {
@@ -81,7 +102,7 @@
 			// strip comments
 			return selector.replace(/\/\*[\s\S]+?\*\//g, "");
 		}).filter(function (selector) {
-			selector = selector.replace(/(?::?)(?:after|before)\s*$/, "");
+			selector = selector.replace(/(?:::?)(?:after|before|(?:-ms-\S+))\s*$/, "");
 			if (!selector || selector.match(/@/)) {
 				return false;
 			}

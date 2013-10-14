@@ -25,10 +25,10 @@ while (args.length) {
 		case "--fake-url":
 			value = (args.length) ? args.shift() : "";
 			if (value) {
-				url = value;
-				if (!url.match(/(\/|\.[^./]+)$/)) {
-					url += "/";
+				if (!value.match(/(\/|\.[^./]+)$/)) {
+					value += "/";
 				}
+				fakeUrl = value;
 			}
 			else {
 				fail("Expected string for 'fake-url' option");
@@ -112,7 +112,7 @@ while (args.length) {
 			break;
 
 		default:
-			if (!url && !arg.match(/^--?[a-z]/){
+			if (!url && !arg.match(/^--?[a-z]/)){
 				url = arg;
 			}
 			else {
@@ -121,6 +121,7 @@ while (args.length) {
 			break;
 	}
 }
+
 
 var page = webpage.create();
 
@@ -214,7 +215,7 @@ function inlineCSS(html, css) {
 				string = cssToken;
 			}
 			return string;
-		}
+		};
 		links = [];
 
 	if (!cssToken) {
@@ -226,7 +227,7 @@ function inlineCSS(html, css) {
 		return insertToken();
 	});
 
-	var stylesheets = links.map(function (link, index) {
+	var stylesheets = links.map(function (link) {
 		var urlMatch = link.match(/href="([^"]+)"/),
 			mediaMatch = link.match(/media="([^"]+)"/),
 		url = urlMatch && urlMatch[1],
@@ -235,7 +236,7 @@ function inlineCSS(html, css) {
 		return { url: url, media: media };
 	});
 
-	html = html.replace(cssToken, function (m) {
+	html = html.replace(cssToken, function () {
 
 		var exposedCSS = "";
 		if (exposeCSS) {
@@ -244,7 +245,7 @@ function inlineCSS(html, css) {
 			return '{href:"' + link.url + '", media:"' + link.media + '"}';
 		}).join(",") + '];\n\
 	</script>\n\
-	'
+	';
 		}
 
 		return '<style ' + ((cssId) ? 'id="' + cssId + '" ' : "") + 'media="screen">\n\
@@ -264,5 +265,5 @@ function fail (message) {
 }
 
 function parseString (value) {
-	return (value.match(/^(["']).*\1$/)) ? JSON.parse(value): value;
+	return (value.match(/^(["']).*\1$/)) ? JSON.parse(value) : value;
 }
