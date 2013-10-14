@@ -1,18 +1,40 @@
 var fs = require("fs"),
 	webpage = require("webpage"),
-	_args = require("system").args;
+	system = require("system");
 
-var	args = [].slice.call(_args, 1),
-	url = args.shift(),
+var	args = [].slice.call(system.args, 1), arg,
+	html, url, fakeUrl,
 	value,
 	width = 1200,
 	height = 0,
 	matchMQ,
-	required;
+	required,
+	cssOnly = false,
+	cssId,
+	cssToken,
+	exposeCSS;
+
+	html = system.stdin.read();
+	system.stdin.close();
 
 while (args.length) {
-	switch (args.shift()) {
+	arg = args.shift();
+	switch (arg) {
 		
+		case "-f":
+		case "--fake-url":
+			value = (args.length) ? args.shift() : "";
+			if (value) {
+				url = value;
+				if (!url.match(/(\/|\.[^./]+)$/)) {
+					url += "/";
+				}
+			}
+			else {
+				fail("Expected string for 'fake-url' option");
+			}
+			break;
+
 		case "-w":
 		case "--width":
 			value = (args.length) ? args.shift() : "";
@@ -20,8 +42,7 @@ while (args.length) {
 				width = value;
 			}
 			else {
-				console.error("Expected numeric value for 'width' option.");
-				phantom.exit();
+				fail("Expected numeric value for 'width' option");
 			}
 			break;
 		
@@ -32,8 +53,7 @@ while (args.length) {
 				height = value;
 			}
 			else {
-				console.error("Expected numeric value for 'height' option.");
-				phantom.exit();
+				fail("Expected numeric value for 'height' option");
 			}
 			break;
 
@@ -43,32 +63,61 @@ while (args.length) {
 			break;
 		
 		case "-r":
-		case "--required":
+		case "--required-selectors":
 			value = (args.length) ? args.shift() : "";
 			if (value) {
-				required = value.split(/\s*,\s*/);
+				required = parseString(value).split(/\s*,\s*/);
 			}
 			else {
-				console.error("Expected a string for 'required' option.");
-				phantom.exit();
-			}
-			break;
-		
-		case "-o":
-		case "--output":
-			value = (args.length) ? args.shift() : "";
-			if (value) {
-				output = value;
-			}
-			else {
-				console.error("Expected a string for 'output' option.");
-				phantom.exit();
+				fail("Expected a string for 'required-selectors' option");
 			}
 			break;
 
+		case "-e":
+		case "--expose-stylesheets":
+			value = (args.length) ? args.shift() : "";
+			if (value) {
+				exposeCSS = ((value.indexOf(".") > -1) ? "" : "var ") + value;
+			}
+			else {
+				fail("Expected a string for 'expose-stylesheets' option");
+			}
+			break;
+
+		case "-t":
+		case "--insertion-token":
+			value = (args.length) ? args.shift() : "";
+			if (value) {
+				cssToken = parseString(value);
+			}
+			else {
+				fail("Expected a string for 'insertion-token' option");
+			}
+			break;
+
+		case "-i":
+		case "--css-id":
+			value = (args.length) ? args.shift() : "";
+			if (value) {
+				cssId = value;
+			}
+			else {
+				fail("Expected a string for 'css-id' option");
+			}
+			break;
+
+		case "-c":
+		case "--css-only":
+			cssOnly = true;
+			break;
+
 		default:
-			console.error("Unknown option.");
-			phantom.exit();
+			if (!url && !arg.match(/^--?[a-z]/){
+				url = arg;
+			}
+			else {
+				fail("Unknown option");
+			}
 			break;
 	}
 }
@@ -81,19 +130,23 @@ page.viewportSize = {
 };
 
 page.onCallback = function (response) {
-
-	if (output) {
-		console.log("Writing output to:", output);
-		fs.write(output, response);
+	if (response.css) {
+		var result;
+		if (cssOnly) {
+			result = response.css;
+		}
+		else {
+			result = inlineCSS(html, response.css);
+		}
+		console.log(result);
+		phantom.exit();
 	}
 	else {
 		console.log(response);
 	}
-	phantom.exit();
-	
 };
 
-page.open(url, function () {
+page.onLoadFinished = function () {
 
 	var options = {};
 
@@ -121,9 +174,95 @@ page.open(url, function () {
 		};
 	}
 
-	var injection = page.injectJs("./lib/extractCSS.js");
+	var scriptPath = phantom.libraryPath + "/extractCSS.js";
+	if (!fs.isFile(scriptPath)) {
+		fail("Unable to locate script at: " + scriptPath);
+	}
+	
+	var injection = page.injectJs(scriptPath);
 	if (!injection) {
-		phantom.exit();
+		fail("Unable to inject script in page");
 	}
 
-});
+};
+
+if (html) {
+
+	if (!fakeUrl) {
+		fail("Missing 'fake-url' option");
+	}
+
+	page.setContent(html, fakeUrl);
+
+}
+else {
+
+	if (!url) {
+		fail("Missing 'url' argument");
+	}
+
+	page.open(url);
+}
+
+function inlineCSS(html, css) {
+
+	var tokenAtFirstStylesheet = !cssToken, // auto-insert css if no cssToken has been specified.
+		insertToken = function () {
+			var string = "";
+			if (tokenAtFirstStylesheet) {
+				tokenAtFirstStylesheet = false;
+				string = cssToken;
+			}
+			return string;
+		}
+		links = [];
+
+	if (!cssToken) {
+		cssToken = "<!-- inline CSS insertion token -->";
+	}
+
+	html = html.replace(/<style[^>]*>[^<]*<\/style>/g, "").replace(/<link [^>]*rel=["']?stylesheet["'][^>]*\/>/g, function (m) {
+		links.push(m);
+		return insertToken();
+	});
+
+	var stylesheets = links.map(function (link, index) {
+		var urlMatch = link.match(/href="([^"]+)"/),
+			mediaMatch = link.match(/media="([^"]+)"/),
+		url = urlMatch && urlMatch[1],
+		media = mediaMatch && mediaMatch[1];
+
+		return { url: url, media: media };
+	});
+
+	html = html.replace(cssToken, function (m) {
+
+		var exposedCSS = "";
+		if (exposeCSS) {
+			exposedCSS = '<script>\n\
+		' + exposeCSS + ' = [' + stylesheets.map(function (link) {
+			return '{href:"' + link.url + '", media:"' + link.media + '"}';
+		}).join(",") + '];\n\
+	</script>\n\
+	'
+		}
+
+		return '<style ' + ((cssId) ? 'id="' + cssId + '" ' : "") + 'media="screen">\n\
+		' + css + '\n\
+	</style>\n\
+	' + exposedCSS;
+
+	});
+
+	return html;
+
+}
+
+function fail (message) {
+	system.stderr.write(message);
+	phantom.exit();
+}
+
+function parseString (value) {
+	return (value.match(/^(["']).*\1$/)) ? JSON.parse(value): value;
+}
