@@ -66,7 +66,7 @@
 				inview = [];
 			
 			// get elements within viewport
-			inview = elements.filter(function (element) {
+			inview = (html.offsetHeight == height) ? false : elements.filter(function (element) {
 				var rect = element.getBoundingClientRect();
 				return (rect.top < height);
 			})
@@ -117,15 +117,20 @@
 			if (required && required.indexOf(selector) > -1) {
 				return true;
 			}
-			var matches = doc.querySelectorAll(selector),
-				i = 0,
-				l = matches.length;
-			if (l) {
-				while (i < l) {
-					if (elements.indexOf(matches[i++]) > -1) {
-						return true;
+			if (elements) {
+				var matches = doc.querySelectorAll(selector),
+					i = 0,
+					l = matches.length;
+				if (l) {
+					while (i < l) {
+						if (elements.indexOf(matches[i++]) > -1) {
+							return true;
+						}
 					}
 				}
+			}
+			else {
+				return true;
 			}
 			return false;
 		});
