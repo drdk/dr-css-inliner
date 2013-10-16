@@ -7,7 +7,7 @@
 		stylesheets = [],
 		mediaStylesheets = [],
 		left,
-		matchesSelector = html.matchesSelector || html.mozMatchesSelector || html.webkitMatchesSelector || html.msMatchesSelector || html.oMatchesSelector;
+		isRunning;
 
 	if (options) {
 		if ("matchMQ" in options) {
@@ -19,10 +19,14 @@
 	}
 
 	function init () {
+		if (isRunning) {
+			return;
+		}
+		isRunning = true;
 		width = html.offsetWidth;
 		height = global.innerHeight;
 		mediaStylesheets = Array.prototype.slice.call(doc.styleSheets).filter(function (stylesheet) {
-			return (!stylesheet.media || stylesheet.media[0] == "screen" || stylesheet.media[0] == "all");
+			return (!stylesheet.media.length || stylesheet.media[0] == "screen" || stylesheet.media[0] == "all");
 		});
 		left = mediaStylesheets.slice(0);
 
@@ -30,7 +34,8 @@
 			host = global.location.protocol + "//" + global.location.host;
 
 		mediaStylesheets.forEach(function (stylesheet) {
-			if (stylesheet.href.indexOf(host) == 0) {
+			if (stylesheet.href && stylesheet.href.indexOf(host) == 0) {
+			
 				fetchStylesheet(stylesheet.href, function (text) {
 					var index = left.indexOf(stylesheet);
 					if (index > -1) {

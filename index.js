@@ -14,9 +14,6 @@ var args = [].slice.call(system.args, 1), arg,
 	cssToken,
 	exposeCSS;
 
-html = system.stdin.read();
-system.stdin.close();
-
 while (args.length) {
 	arg = args.shift();
 	switch (arg) {
@@ -123,6 +120,8 @@ while (args.length) {
 	
 }
 
+//message("url: " + url);
+
 var page = webpage.create();
 
 page.viewportSize = {
@@ -137,7 +136,7 @@ page.onCallback = function (response) {
 			result = response.css;
 		}
 		else {
-			result = inlineCSS(html, response.css);
+			result = inlineCSS(response.css);
 		}
 		system.stdout.write(result);
 		phantom.exit();
@@ -163,7 +162,9 @@ page.onConsoleMessage = function (msg, lineNum, sourceId) {
 	console.log('CONSOLE: ' + msg + ' (from line #' + lineNum + ' in "' + sourceId + '")');
 };
 
-page.onLoadFinished = function () {
+page.onLoadFinished = onload;
+
+function onload () {
 
 	var options = {};
 
@@ -201,28 +202,34 @@ page.onLoadFinished = function () {
 	if (!injection) {
 		fail("Unable to inject script in page");
 	}
+	
+}
 
-};
+if (url) {
 
-if (html) {
+	html = fs.read(url);
 
-	if (!fakeUrl) {
-		fail("Missing 'fake-url' option");
-	}
-
-	page.setContent(html, fakeUrl);
+	page.open(url, onload);
 
 }
 else {
 
-	if (!url) {
-		fail("Missing 'url' argument");
-	}
+	
+	html = system.stdin.read();
+	system.stdin.close();
 
-	page.open(url);
+	if (html) {
+
+		if (!fakeUrl) {
+			fail("Missing 'fake-url' option");
+		}
+	
+		page.setContent(html, fakeUrl);
+		
+	}
 }
 
-function inlineCSS(html, css) {
+function inlineCSS(css) {
 
 	var tokenAtFirstStylesheet = !cssToken, // auto-insert css if no cssToken has been specified.
 		insertToken = function () {
