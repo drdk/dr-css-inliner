@@ -3,14 +3,14 @@ var fs = require("fs"),
 	system = require("system");
 
 phantom.onError = function (msg, trace) {
-	var msgStack = ['PHANTOM ERROR: ' + msg];
+	var msgStack = ["PHANTOM ERROR: " + msg];
 	if (trace && trace.length) {
-		msgStack.push('TRACE:');
+		msgStack.push("TRACE:");
 		trace.forEach(function (t) {
-			msgStack.push(' -> ' + (t.file || t.sourceURL) + ': ' + t.line + (t.function ? ' (in function ' + t.function + ')' : ''));
+			msgStack.push(" -> " + (t.file || t.sourceURL) + ": " + t.line + (t.function ? " (in function " + t.function + ")" : ""));
 		});
 	}
-	system.stderr.write(msgStack.join('\n'));
+	system.stderr.write(msgStack.join("\n"));
 	phantom.exit(1);
 };
 
@@ -21,6 +21,7 @@ var args = [].slice.call(system.args, 1), arg,
 	height = 0,
 	matchMQ,
 	required,
+	prefetch,
 	cssOnly = false,
 	cssId,
 	cssToken,
@@ -92,6 +93,11 @@ while (args.length) {
 			else {
 				fail("Expected a string for '--expose-stylesheets' option");
 			}
+			break;
+
+		case "-p":
+		case "--prefetch":
+			prefetch = true;
 			break;
 
 		case "-t":
@@ -287,13 +293,6 @@ function inlineCSS(css) {
 		return { url: url, media: media };
 	});
 
-	var exposed = "";
-	if (exposeStylesheets) {
-		exposed = "\t\t<script>\n\t\t\t" + exposeStylesheets + " = [" + stylesheets.map(function (link) {
-			return "{href:\"" + link.url + "\", media:\"" + link.media + "\"}";
-		}).join(",") + "];\n\t\t</script>\n";
-	}
-
 	var index = html.indexOf(cssToken),
 		length = cssToken.length;
 
@@ -301,15 +300,21 @@ function inlineCSS(css) {
 		fail("token not found:\n" + cssToken);
 	}
 
-	var result = [html.slice(0, index - 1),
-			"<style " + ((cssId) ? "id=\"" + cssId + "\" " : "") + "media=\"screen\">\n\t\t\t",
-				css,
-			"\n\t\t</style>\n",
-			exposed,
-			html.slice(index + length)
-		].join("");
+	var replacement = "<style " + ((cssId) ? "id=\"" + cssId + "\" " : "") + "media=\"screen\">\n\t\t\t" + css + "\n\t\t</style>\n";
 
-	return result;
+	if (exposeStylesheets) {
+		replacement += "\t\t<script>\n\t\t\t" + exposeStylesheets + " = [" + stylesheets.map(function (link) {
+			return "{href:\"" + link.url + "\", media:\"" + link.media + "\"}";
+		}).join(",") + "];\n\t\t</script>\n";
+	}
+
+	if (prefetch) {
+		replacement += stylesheets.map(function (link) {
+			return "\t\t<link rel=\"prefetch\" href=\"" + link.url + "\" />\n";
+		}).join("");
+	}
+
+	return html.slice(0, index - 1) + replacement + html.slice(index + length);
 
 }
 
