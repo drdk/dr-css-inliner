@@ -18,7 +18,7 @@
 		}
 	}
 
-	function init () {
+	function init() {
 		if (isRunning) {
 			return;
 		}
@@ -34,8 +34,8 @@
 			host = global.location.protocol + "//" + global.location.host;
 
 		mediaStylesheets.forEach(function (stylesheet) {
+			// avoid crossdomain requests
 			if (stylesheet.href && stylesheet.href.indexOf(host) == 0) {
-			
 				fetchStylesheet(stylesheet.href, function (text) {
 					var index = left.indexOf(stylesheet);
 					if (index > -1) {
@@ -61,82 +61,84 @@
 			}
 		});
 
-		function complete () {
-			var elements = Array.prototype.slice.call(doc.getElementsByTagName("*")),
-				inview = [];
-			
-			// get elements within viewport
-			inview = (html.offsetHeight == height) ? false : elements.filter(function (element) {
-				var rect = element.getBoundingClientRect();
-				return (rect.top < height);
-			})
-			
+		function complete() {
+			var elements = false;
+
+			// if viewport height is forced
+			// define elements to check seletors against
+			if (html.offsetHeight != height) {
+				elements = Array.prototype.slice.call(doc.getElementsByTagName("*")).filter(function (element) {
+					var rect = element.getBoundingClientRect();
+					return (rect.top < height);
+				});
+			}
+
 			var CSS = stylesheets.map(function (css) {
-				return outputRules(filterCSS(css, inview));
+				return outputRules(filterCSS(css, elements));
 			}).join("");
-			
+
 			if (typeof global.callPhantom === 'function') {
-				global.callPhantom({css: CSS});
+				global.callPhantom({ css: CSS });
 			}
 			else if (global.console) {
-				console.log({css: CSS});
+				console.log({ css: CSS });
 			}
-			
+
 		}
 
 	}
 
-	function log (message) {
+	function log(message) {
 		if (typeof global.callPhantom === 'function') {
 			global.callPhantom(message);
 		}
 		else if (global.console) {
 			console.log(message);
 		}
-	} 
+	}
 
-	function outputRules (rules) {
+	function outputRules(rules) {
 		return rules.map(function (rule) {
 			return rule.selectors.join(",") + "{" + rule.css + "}";
 		}).join("");
 	}
 
-	function matchSelectors (selectors, elements) {
-		
-		return selectors.map(function (selector) {
+	function matchSelectors(selectors, elements) {
+
+		return selectors/*.map(function (selector) {
 			// strip comments
 			return selector.replace(/\/\*[\s\S]+?\*\//g, "");
-		}).filter(function (selector) {
-			selector = selector.replace(/(?:::?)(?:after|before|link|visited|hover|active|focus|invalid|valid|read-only|target|(?:-[^\s,{}]+))\s*$/, "");
+		})*/.filter(function (selector) {
+			if (selector.indexOf(":") > -1) {
+				selector = selector.replace(/(?:::?)(?:after|before|link|visited|hover|active|focus|invalid|valid|read-only|target|(?:-[a-zA-Z-]+))\s*$/, "");
+			}
 			if (!selector || selector.match(/@/)) {
 				return false;
-			}
-			else if (selector.match(/^::/)) { // wildcard ::pseudo-selectors 
-				return true;
 			}
 			if (required && required.indexOf(selector) > -1) {
 				return true;
 			}
-			if (elements) {
-				var matches = doc.querySelectorAll(selector),
-					i = 0,
-					l = matches.length;
-				if (l) {
+			
+			var matches = doc.querySelectorAll(selector),
+				i = 0,
+				l = matches.length;
+			
+			if (l) {
+				if (elements) {
 					while (i < l) {
 						if (elements.indexOf(matches[i++]) > -1) {
 							return true;
 						}
 					}
+					return false;
 				}
-			}
-			else {
 				return true;
 			}
 			return false;
 		});
 	}
 
-	function filterCSS (css, inview) {
+	function filterCSS(css, elements) {
 
 		var rules = parseRules(css),
 			matchedRules = [];
@@ -165,7 +167,7 @@
 								}
 							}
 							if (!matchMQ || !mq || ((!("min-width" in mq) || mq["min-width"] <= width) && (!("max-width" in mq) || mq["max-width"] >= width))) {
-								var matchedSubRules = filterCSS(rule.css, inview);
+								var matchedSubRules = filterCSS(rule.css, elements);
 								if (matchedSubRules.length) {
 									matchingSelectors = rule.selectors;
 									rule.css = outputRules(matchedSubRules);
@@ -176,7 +178,7 @@
 
 				}
 				else {
-					matchingSelectors = matchSelectors(rule.selectors, inview);
+					matchingSelectors = matchSelectors(rule.selectors, elements);
 				}
 			}
 			if (matchingSelectors.length) {
@@ -189,10 +191,9 @@
 
 	}
 
-	function parseRules (css) {
+	function parseRules(css) {
 		var matches = css.replace(/\n+/g, " ").match(/(?:[^{}]+\s*\{[^{}]+\})|(?:[^{}]+\{\s*(?:[^{}]+\{[^{}]+\})+\s*\})/g),
 			rules = [];
-
 		if (matches) {
 			matches.forEach(function (match) {
 				var rule = parseRule(match);
@@ -201,11 +202,11 @@
 				}
 			});
 		}
-		
-		return rules;
-	} 
 
-	function parseRule (rule) {
+		return rules;
+	}
+
+	function parseRule(rule) {
 		var match = rule.match(/^\s*([^{}]+)\s*\{\s*((?:[^{}]+\{[^{}]+\})+|[^{}]+)\s*\}$/);
 		return {
 			selectors: match && match[1].split(/\s*,\s*/),
@@ -213,7 +214,7 @@
 		}
 	}
 
-	function pathRelativeToPage (basepath, csspath, sourcepath) {
+	function pathRelativeToPage(basepath, csspath, sourcepath) {
 		while (sourcepath.indexOf("../") == 0) {
 			sourcepath = sourcepath.slice(3);
 			csspath = csspath.replace(/\/[^/]+\/[^/]*$/, "/");
@@ -221,18 +222,18 @@
 		var path = csspath + sourcepath;
 		return (path.indexOf(basepath) === 0) ? path.slice(basepath.length) : path;
 	}
-	
-	function fetchStylesheet (url, callback) {
+
+	function fetchStylesheet(url, callback) {
 		var xhr = new XMLHttpRequest();
-		
+
 		xhr.open("GET", url, false);
-		
+
 		xhr.onload = function () {
 			callback(xhr.responseText);
 		};
-		
+
 		xhr.send(null);
-		
+
 		return xhr;
 	}
 
@@ -246,4 +247,4 @@
 	}
 
 
-} (window, document));
+}(window, document));

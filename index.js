@@ -12,7 +12,11 @@ var args = [].slice.call(system.args, 1), arg,
 	cssOnly = false,
 	cssId,
 	cssToken,
-	exposeCSS;
+	exposeStylesheets
+	localStorage;
+
+html = system.stdin.read();
+system.stdin.close();
 
 while (args.length) {
 	arg = args.shift();
@@ -28,7 +32,7 @@ while (args.length) {
 				fakeUrl = value;
 			}
 			else {
-				fail("Expected string for 'fake-url' option");
+				fail("Expected string for '--fake-url' option");
 			}
 			break;
 
@@ -39,7 +43,7 @@ while (args.length) {
 				width = value;
 			}
 			else {
-				fail("Expected numeric value for 'width' option");
+				fail("Expected numeric value for '--width' option");
 			}
 			break;
 
@@ -50,7 +54,7 @@ while (args.length) {
 				height = value;
 			}
 			else {
-				fail("Expected numeric value for 'height' option");
+				fail("Expected numeric value for '--height' option");
 			}
 			break;
 
@@ -66,7 +70,7 @@ while (args.length) {
 				required = parseString(value).split(/\s*,\s*/);
 			}
 			else {
-				fail("Expected a string for 'required-selectors' option");
+				fail("Expected a string for '--required-selectors' option");
 			}
 			break;
 
@@ -74,10 +78,10 @@ while (args.length) {
 		case "--expose-stylesheets":
 			value = (args.length) ? args.shift() : "";
 			if (value) {
-				exposeCSS = ((value.indexOf(".") > -1) ? "" : "var ") + value;
+				exposeStylesheets = ((value.indexOf(".") > -1) ? "" : "var ") + value;
 			}
 			else {
-				fail("Expected a string for 'expose-stylesheets' option");
+				fail("Expected a string for '--expose-stylesheets' option");
 			}
 			break;
 
@@ -88,7 +92,7 @@ while (args.length) {
 				cssToken = parseString(value);
 			}
 			else {
-				fail("Expected a string for 'insertion-token' option");
+				fail("Expected a string for '--insertion-token' option");
 			}
 			break;
 
@@ -100,6 +104,17 @@ while (args.length) {
 			}
 			else {
 				fail("Expected a string for 'css-id' option");
+			}
+			break;
+
+		case "-l":
+		case "--local-storage":
+			value = (args.length) ? args.shift() : "";
+			if (value) {
+				localStorage = JSON.parse(value);
+			}
+			else {
+				fail("Expected a string for '--local-storage' option");
 			}
 			break;
 
@@ -117,10 +132,8 @@ while (args.length) {
 			}
 			break;
 	}
-	
-}
 
-//message("url: " + url);
+}
 
 var page = webpage.create();
 
@@ -130,6 +143,7 @@ page.viewportSize = {
 };
 
 page.onCallback = function (response) {
+	page.close();
 	if (response.css) {
 		var result;
 		if (cssOnly) {
@@ -158,13 +172,7 @@ page.onError = function (msg, trace) {
 	fail(msgStack.join('\n'));
 };
 
-page.onConsoleMessage = function (msg, lineNum, sourceId) {
-	console.log('CONSOLE: ' + msg + ' (from line #' + lineNum + ' in "' + sourceId + '")');
-};
-
-page.onLoadFinished = onload;
-
-function onload () {
+page.onLoadFinished = function () {
 
 	var options = {};
 
@@ -174,6 +182,17 @@ function onload () {
 
 	if (required) {
 		options.required = required;
+	}
+
+	if (localStorage) {
+		page.evaluate(function (data) {
+			var storage = window.localStorage;
+			if (storage) {
+				for (var key in data) {
+					storage.setItem(key, data[key]);
+				}
+			}
+		}, localStorage);
 	}
 
 	if (Object.keys(options).length) {
@@ -202,41 +221,19 @@ function onload () {
 	if (!injection) {
 		fail("Unable to inject script in page");
 	}
-	
-}
 
-if (url) {
+};
 
-	html = fs.read(url);
+if (!cssOnly) {
 
-	page.open(url, onload);
-
-}
-else {
-
-	
-	html = system.stdin.read();
-	system.stdin.close();
-
-	if (html) {
-
-		if (!fakeUrl) {
-			fail("Missing 'fake-url' option");
-		}
-	
-		page.setContent(html, fakeUrl);
-		
-	}
-}
-
-function inlineCSS(css) {
-
-	var tokenAtFirstStylesheet = !cssToken, // auto-insert css if no cssToken has been specified.
-		insertToken = function () {
+	var _html = html + "",
+		tokenAtFirstStylesheet = !cssToken, // auto-insert css if no cssToken has been specified.
+		insertToken = function (m) {
 			var string = "";
 			if (tokenAtFirstStylesheet) {
 				tokenAtFirstStylesheet = false;
-				string = cssToken;
+				var whitespace = m.match(/^[^<]+/);
+				string = ((whitespace) ? whitespace[0] : "") + cssToken;
 			}
 			return string;
 		},
@@ -247,11 +244,11 @@ function inlineCSS(css) {
 		cssToken = "<!-- inline CSS insertion token -->";
 	}
 
-	html = html.replace(/<style[^>]*>[^<]*<\/style>/g, "").replace(/<link [^>]*rel=["']?stylesheet["'][^>]*\/>/g, function (m) {
+	_html = _html.replace(/[ \t]*<link [^>]*rel=["']?stylesheet["'][^>]*\/>[ \t]*(?:\n|\r\n)?/g, function (m) {
 		links.push(m);
-		return insertToken();
+		return insertToken(m);
 	});
-
+	
 	stylesheets = links.map(function (link) {
 		var urlMatch = link.match(/href="([^"]+)"/),
 			mediaMatch = link.match(/media="([^"]+)"/),
@@ -261,26 +258,52 @@ function inlineCSS(css) {
 		return { url: url, media: media };
 	});
 
-	html = html.replace(cssToken, function () {
+}
 
-		var exposedCSS = "";
-		if (exposeCSS) {
-			exposedCSS = '<script>\n\
-		' + exposeCSS + ' = [' + stylesheets.map(function (link) {
-			return '{href:"' + link.url + '", media:"' + link.media + '"}';
-		}).join(",") + '];\n\
-	</script>\n\
-	';
-		}
+if (html) {
 
-		return '<style ' + ((cssId) ? 'id="' + cssId + '" ' : "") + 'media="screen">\n\
-		' + css + '\n\
-	</style>\n\
-	' + exposedCSS;
+	if (!fakeUrl) {
+		fail("Missing 'fake-url' option");
+	}
 
-	});
+	page.setContent(html, fakeUrl);
 
-	return html;
+}
+else {
+
+	if (!url) {
+		fail("Missing 'url' argument");
+	}
+
+	page.open(url);
+}
+
+
+
+function inlineCSS(css) {
+	var exposed = "";
+	if (exposeStylesheets) {
+		exposed = "\t\t<script>\n\t\t\t" + exposeStylesheets + " = [" + stylesheets.map(function (link) {
+			return "{href:\"" + link.url + "\", media:\"" + link.media + "\"}";
+		}).join(",") + "];\n\t\t</script>\n";
+	}
+	
+	var index = _html.indexOf(cssToken),
+		length = cssToken.length;
+
+	if (index == -1) {
+		fail("token not found:\n" + cssToken);
+	}
+
+	var result = [_html.slice(0, index),
+			"<style " + ((cssId) ? "id=\"" + cssId + "\" " : "") + "media=\"screen\">\n\t\t\t",
+				css,
+			"\n\t\t</style>\n",
+			exposed,
+			_html.slice(index + length)
+		].join("");
+
+	return result;
 
 }
 
