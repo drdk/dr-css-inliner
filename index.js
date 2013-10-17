@@ -24,7 +24,7 @@ var args = [].slice.call(system.args, 1), arg,
 	cssOnly = false,
 	cssId,
 	cssToken,
-	exposeStylesheets
+	exposeStylesheets,
 	localStorage;
 
 while (args.length) {
@@ -293,7 +293,7 @@ function inlineCSS(css) {
 			return "{href:\"" + link.url + "\", media:\"" + link.media + "\"}";
 		}).join(",") + "];\n\t\t</script>\n";
 	}
-	
+
 	var index = html.indexOf(cssToken),
 		length = cssToken.length;
 
