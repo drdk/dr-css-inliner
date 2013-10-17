@@ -107,7 +107,7 @@
 			// strip comments
 			return selector.replace(/\/\*[\s\S]+?\*\//g, "");
 		}).filter(function (selector) {
-			selector = selector.replace(/(?:::?)(?:after|before|(?:-ms-\S+))\s*$/, "");
+			selector = selector.replace(/(?:::?)(?:after|before|link|visited|hover|active|focus|checked|selected|disabled|invalid|valid|read-only|required|target|(?:-[^\s,{}]+))\s*$/, "");
 			if (!selector || selector.match(/@/)) {
 				return false;
 			}
