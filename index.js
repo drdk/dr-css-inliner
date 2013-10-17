@@ -2,6 +2,18 @@ var fs = require("fs"),
 	webpage = require("webpage"),
 	system = require("system");
 
+phantom.onError = function (msg, trace) {
+	var msgStack = ['PHANTOM ERROR: ' + msg];
+	if (trace && trace.length) {
+		msgStack.push('TRACE:');
+		trace.forEach(function (t) {
+			msgStack.push(' -> ' + (t.file || t.sourceURL) + ': ' + t.line + (t.function ? ' (in function ' + t.function + ')' : ''));
+		});
+	}
+	system.stderr.write(msgStack.join('\n'));
+	phantom.exit(1);
+};
+
 var args = [].slice.call(system.args, 1), arg,
 	html, url, fakeUrl,
 	value,
@@ -14,9 +26,6 @@ var args = [].slice.call(system.args, 1), arg,
 	cssToken,
 	exposeStylesheets
 	localStorage;
-
-html = system.stdin.read();
-system.stdin.close();
 
 while (args.length) {
 	arg = args.shift();
@@ -103,7 +112,7 @@ while (args.length) {
 				cssId = value;
 			}
 			else {
-				fail("Expected a string for 'css-id' option");
+				fail("Expected a string for '--css-id' option");
 			}
 			break;
 
@@ -224,10 +233,30 @@ page.onLoadFinished = function () {
 
 };
 
-if (!cssOnly) {
+if (url) {
 
-	var _html = html + "",
-		tokenAtFirstStylesheet = !cssToken, // auto-insert css if no cssToken has been specified.
+	html = fs.read(url);
+	page.open(url);
+
+}
+else {
+
+	html = system.stdin.read();
+	system.stdin.close();
+
+	if (!fakeUrl) {
+		fail("Missing 'fake-url' option");
+	}
+
+	page.setContent(html, fakeUrl);
+
+}
+
+
+
+function inlineCSS(css) {
+
+	var tokenAtFirstStylesheet = !cssToken, // auto-insert css if no cssToken has been specified.
 		insertToken = function (m) {
 			var string = "";
 			if (tokenAtFirstStylesheet) {
@@ -244,11 +273,11 @@ if (!cssOnly) {
 		cssToken = "<!-- inline CSS insertion token -->";
 	}
 
-	_html = _html.replace(/[ \t]*<link [^>]*rel=["']?stylesheet["'][^>]*\/>[ \t]*(?:\n|\r\n)?/g, function (m) {
+	html = html.replace(/[ \t]*<link [^>]*rel=["']?stylesheet["'][^>]*\/>[ \t]*(?:\n|\r\n)?/g, function (m) {
 		links.push(m);
 		return insertToken(m);
 	});
-	
+
 	stylesheets = links.map(function (link) {
 		var urlMatch = link.match(/href="([^"]+)"/),
 			mediaMatch = link.match(/media="([^"]+)"/),
@@ -258,29 +287,6 @@ if (!cssOnly) {
 		return { url: url, media: media };
 	});
 
-}
-
-if (html) {
-
-	if (!fakeUrl) {
-		fail("Missing 'fake-url' option");
-	}
-
-	page.setContent(html, fakeUrl);
-
-}
-else {
-
-	if (!url) {
-		fail("Missing 'url' argument");
-	}
-
-	page.open(url);
-}
-
-
-
-function inlineCSS(css) {
 	var exposed = "";
 	if (exposeStylesheets) {
 		exposed = "\t\t<script>\n\t\t\t" + exposeStylesheets + " = [" + stylesheets.map(function (link) {
@@ -288,19 +294,19 @@ function inlineCSS(css) {
 		}).join(",") + "];\n\t\t</script>\n";
 	}
 	
-	var index = _html.indexOf(cssToken),
+	var index = html.indexOf(cssToken),
 		length = cssToken.length;
 
 	if (index == -1) {
 		fail("token not found:\n" + cssToken);
 	}
 
-	var result = [_html.slice(0, index),
+	var result = [html.slice(0, index - 1),
 			"<style " + ((cssId) ? "id=\"" + cssId + "\" " : "") + "media=\"screen\">\n\t\t\t",
 				css,
 			"\n\t\t</style>\n",
 			exposed,
-			_html.slice(index + length)
+			html.slice(index + length)
 		].join("");
 
 	return result;
