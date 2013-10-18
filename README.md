@@ -29,11 +29,21 @@ phantomjs index.js <url> [options]
 * `-h, --height [value]` - Determines the above-the-fold height. Defaults to the actual document height.
 * `-m, --match-media-queries` - Omit media queries that don't match the defined width.
 * `-r, --required-selectors [string]` - Force inclusion of required selectors in the form of a comma-separated selector string. Defaults to no required selectors.
+* `-s, --strip-resources [array]` - Avoid loading resources matching any of strings in the array (turned into the regexp patterns). Default is no stripping of resources.
 * `-c, --css-only` - Output the raw required CSS without wrapping it in HTML.
 * `-e, --expose-stylesheets [string]` - A variable name (or property on a preexisting variable) to expose an array containing information about the stripped stylesheets in an inline script tag.
 * `-t, --insertion-token [string]` - A token (preferably an HTML comment) to control the exact insertion point of the inlined CSS. If omited default insertion is at the first encountered stylesheet.
 * `-i, --css-id [string]` - Determines the id attribute of the inline style tag. By default no id is added.
 * `-f,  --fake-url` - Defines a _fake_ url context. Required when piping in html through `stdin`. Default is null.
+* `-d, --debug` - Prints out an HTML comment in the bottom of the output that exposes some info (see below).
+
+###### Debug info
+* `time` - The time in ms it took to run the script (not including the phantomjs process itself).
+* `loadTime` - The time in ms it took to load the webpage.
+* `processingTime` - The time in ms it took to process and return the CSS in the webpage.
+* `requests` - An array of urls of all requests made by the webpage. Useful for spotting resources to strip.
+* `stripped` - An array of urls of requests aborted by `--strip-resources` option.
+* `cssLength` - The length of the inlined CSS in chars.
 
 ##### Examples:
 
@@ -262,6 +272,50 @@ phantomjs index.js index.html -t "<!-- CSS goes here -->"
 	</body>
 </html>
 ```
+
+###### Avoid loading unneeded resources
+
+`-s, --strip-resources [string]`
+
+Doing:
+
+```
+phantomjs index.js index.html -s ["\.(jpg|gif|png)$"]
+```
+
+... would avoid loading images, eg. `img/wallpaper.gif`.
+
+###### Debug info
+
+`-d, --debug`
+
+Doing:
+```
+phantomjs index.js index.html -d
+```
+
+...would get you:
+
+```html
+<!doctype html>
+<html>
+	<head>
+		<title>Foo</title>
+		<style>
+			.foo {
+				color: #BADA55;
+			}
+		</style>
+	</head>
+	<body>
+		<h1 class="foo">Inlining CSS is in</h1>
+	</body>
+</html>
+<!--
+	{"time":300, "loadTime":150,"requests":[...],"stripped":[...],"cssLength":5050}
+-->
+```
+
 
 ###### Adding an id to the inlined style tag
 
