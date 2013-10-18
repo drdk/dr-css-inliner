@@ -29,7 +29,7 @@ phantomjs index.js <url> [options]
 * `-h, --height [value]` - Determines the above-the-fold height. Defaults to the actual document height.
 * `-m, --match-media-queries` - Omit media queries that don't match the defined width.
 * `-r, --required-selectors [string]` - Force inclusion of required selectors in the form of a comma-separated selector string. Defaults to no required selectors.
-* `-s, --strip-resources [array]` - Avoid loading resources matching any of strings in the array (turned into the regexp patterns). Default is no stripping of resources.
+* `-s, --strip-resources [string|array]` - Avoid loading resources matching the string (or array of strings) turned into regexp pattern(s). Default is no stripping of resources.
 * `-c, --css-only` - Output the raw required CSS without wrapping it in HTML.
 * `-e, --expose-stylesheets [string]` - A variable name (or property on a preexisting variable) to expose an array containing information about the stripped stylesheets in an inline script tag.
 * `-t, --insertion-token [string]` - A token (preferably an HTML comment) to control the exact insertion point of the inlined CSS. If omited default insertion is at the first encountered stylesheet.
@@ -275,15 +275,15 @@ phantomjs index.js index.html -t "<!-- CSS goes here -->"
 
 ###### Avoid loading unneeded resources
 
-`-s, --strip-resources [string]`
+`-s, --strip-resources [string|array]`
 
 Doing:
 
 ```
-phantomjs index.js index.html -s ["\.(jpg|gif|png)$"]
+phantomjs index.js index.html -s ["\.(jpg|gif|png)$","webstat\.js$"]
 ```
 
-... would avoid loading images, eg. `img/wallpaper.gif`.
+... would avoid loading images and a given web statistic script.
 
 ###### Debug info
 
@@ -312,7 +312,7 @@ phantomjs index.js index.html -d
 	</body>
 </html>
 <!--
-	{"time":300, "loadTime":150,"requests":[...],"stripped":[...],"cssLength":5050}
+	{"time":300,"loadTime":155,"processingTime":145,"requests":[...],"stripped":[...],"cssLength":5050}
 -->
 ```
 
