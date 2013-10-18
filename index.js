@@ -304,25 +304,20 @@ if (url) {
 
 	html = fs.read(url);
 
-	debug.loadTime = new Date();
-
-	page.open(url);
-
 }
 else {
-
-	html = system.stdin.read();
-	system.stdin.close();
 
 	if (!fakeUrl) {
 		fail("Missing 'fake-url' option");
 	}
 
-	debug.loadTime = new Date();
-
-	page.setContent(html, fakeUrl);
+	html = system.stdin.read();
+	system.stdin.close();
 
 }
+
+debug.loadTime = new Date();
+page.setContent(html, url || fakeUrl);
 
 
 
