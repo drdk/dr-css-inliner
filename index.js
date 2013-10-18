@@ -1,6 +1,7 @@
 var debug = {
 		time: new Date(),
 		loadTime: null,
+		processingTime: null,
 		requests: [],
 		stripped: [],
 		cssLength: 0
@@ -222,6 +223,7 @@ page.onCallback = function (response) {
 		if (outpuDebug) {
 			debug.cssLength = response.css.length;
 			debug.time = new Date() - debug.time;
+			debug.processingTime = debug.time - debug.loadTime;
 			result += "\n<!--\n\t" + JSON.stringify(debug) + "\n-->";
 		}
 		system.stdout.write(result);
