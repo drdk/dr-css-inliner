@@ -1,3 +1,11 @@
+var debug = {
+		time: new Date(),
+		loadTime: null,
+		requests: [],
+		stripped: [],
+		cssLength: 0
+	};
+
 var fs = require("fs"),
 	webpage = require("webpage"),
 	system = require("system");
@@ -26,7 +34,9 @@ var args = [].slice.call(system.args, 1), arg,
 	cssId,
 	cssToken,
 	exposeStylesheets,
-	localStorage;
+	stripResources,
+	localStorage,
+	outpuDebug;
 
 while (args.length) {
 	arg = args.shift();
@@ -122,6 +132,20 @@ while (args.length) {
 			}
 			break;
 
+		case "-s":
+		case "--strip-resources":
+			value = (args.length) ? args.shift() : "";
+			if (value) {
+				stripResources = JSON.parse(value);
+				if (typeof stripResources == "string") {
+					stripResources = [stripResources];
+				}
+			}
+			else {
+				fail("Expected a string for '--strip-resources' option");
+			}
+			break;
+
 		case "-l":
 		case "--local-storage":
 			value = (args.length) ? args.shift() : "";
@@ -136,6 +160,11 @@ while (args.length) {
 		case "-c":
 		case "--css-only":
 			cssOnly = true;
+			break;
+
+		case "-d":
+		case "--debug":
+			outpuDebug = true;
 			break;
 
 		default:
@@ -157,6 +186,29 @@ page.viewportSize = {
 	height: height || 800
 };
 
+if (stripResources) {
+	var baseUrl = url ||fakeUrl;
+	page.onResourceRequested = function (requestData, request) {
+		var _url = requestData["url"];
+		if (_url.indexOf(baseUrl) > -1) {
+			_url = _url.slice(baseUrl.length);
+		}
+		if (!_url.match(/^data/) && debug.requests.indexOf(_url) < 0) {
+			debug.requests.push(_url);
+		}
+		var i = 0,
+			l = stripResources.length;
+		// /http:\/\/.+?\.(jpg|png|svg|gif)$/gi
+		while (i < l) {
+			if ((new RegExp(stripResources[i++], "i")).test(_url)) {
+				debug.stripped.push(_url);
+				request.abort();
+				break;
+			}
+		}
+	};
+}
+
 page.onCallback = function (response) {
 	page.close();
 	if (response.css) {
@@ -166,6 +218,11 @@ page.onCallback = function (response) {
 		}
 		else {
 			result = inlineCSS(response.css);
+		}
+		if (outpuDebug) {
+			debug.cssLength = response.css.length;
+			debug.time = new Date() - debug.time;
+			result += "\n<!--\n\t" + JSON.stringify(debug) + "\n-->";
 		}
 		system.stdout.write(result);
 		phantom.exit();
@@ -188,6 +245,8 @@ page.onError = function (msg, trace) {
 };
 
 page.onLoadFinished = function () {
+
+	debug.loadTime = new Date() - debug.loadTime;
 
 	var options = {};
 
@@ -242,6 +301,9 @@ page.onLoadFinished = function () {
 if (url) {
 
 	html = fs.read(url);
+
+	debug.loadTime = new Date();
+
 	page.open(url);
 
 }
@@ -253,6 +315,8 @@ else {
 	if (!fakeUrl) {
 		fail("Missing 'fake-url' option");
 	}
+
+	debug.loadTime = new Date();
 
 	page.setContent(html, fakeUrl);
 

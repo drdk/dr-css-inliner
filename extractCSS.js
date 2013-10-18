@@ -42,7 +42,7 @@
 						left.splice(index, 1);
 					}
 					text = text.replace(/\/\*[\s\S]+?\*\//g, "").replace(/[\n\r]+/g, "").replace(/url\((["']|)(\.\.\/[^"'\(\)]+)\1\)/g, function (m, quote, url) {
-						return "url(\"" + pathRelativeToPage(base, stylesheet.href, url) + "\")";
+						return "url(" + quote + pathRelativeToPage(base, stylesheet.href, url) + quote + ")";
 					});
 					stylesheets.push(text);
 					if (left.length == 0) {
@@ -105,10 +105,10 @@
 
 	function matchSelectors(selectors, elements) {
 
-		return selectors/*.map(function (selector) {
+		return selectors.map(function (selector) {
 			// strip comments
-			return selector.replace(/\/\*[\s\S]+?\*\//g, "");
-		})*/.filter(function (selector) {
+			return selector.replace(/\/\*[\s\S]+?\*\//g, "").replace(/(^\s+)|(\s+$)/g, "");
+		}).filter(function (selector) {
 			if (selector.indexOf(":") > -1) {
 				selector = selector.replace(/(?:::?)(?:after|before|link|visited|hover|active|focus|invalid|valid|read-only|target|(?:-[a-zA-Z-]+))\s*$/, "");
 			}
