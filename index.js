@@ -212,7 +212,7 @@ if (stripResources) {
 
 page.onCallback = function (response) {
 	page.close();
-	if (response.css) {
+	if ("css" in response) {
 		var result;
 		if (cssOnly) {
 			result = response.css;

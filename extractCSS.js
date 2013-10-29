@@ -88,15 +88,6 @@
 
 	}
 
-	function log(message) {
-		if (typeof global.callPhantom === 'function') {
-			global.callPhantom(message);
-		}
-		else if (global.console) {
-			console.log(message);
-		}
-	}
-
 	function outputRules(rules) {
 		return rules.map(function (rule) {
 			return rule.selectors.join(",") + "{" + rule.css + "}";
@@ -118,7 +109,6 @@
 			if (required && required.indexOf(selector) > -1) {
 				return true;
 			}
-			
 			var matches = doc.querySelectorAll(selector),
 				i = 0,
 				l = matches.length;
