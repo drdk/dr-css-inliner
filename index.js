@@ -248,6 +248,19 @@ page.onError = function (msg, trace) {
 
 page.onLoadFinished = function () {
 
+	if (!html) {
+		html = page.evaluate(function () {
+			var xhr = new XMLHttpRequest(),
+				html;
+			xhr.open("get", window.location.href, false);
+			xhr.onload = function () {
+				html = xhr.responseText;
+			};
+			xhr.send();
+			return html;
+		});
+	}
+
 	debug.loadTime = new Date() - debug.loadTime;
 
 	var options = {};
@@ -301,8 +314,9 @@ page.onLoadFinished = function () {
 };
 
 if (url) {
-
-	html = fs.read(url);
+	
+	debug.loadTime = new Date();
+	page.open(url);
 
 }
 else {
@@ -313,11 +327,11 @@ else {
 
 	html = system.stdin.read();
 	system.stdin.close();
+	
+	debug.loadTime = new Date();
+	page.setContent(html, url);
 
 }
-
-debug.loadTime = new Date();
-page.setContent(html, url || fakeUrl);
 
 
 
