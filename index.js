@@ -1,11 +1,11 @@
 var debug = {
-		time: new Date(),
-		loadTime: null,
-		processingTime: null,
-		requests: [],
-		stripped: [],
-		cssLength: 0
-	};
+	time: new Date(),
+	loadTime: null,
+	processingTime: null,
+	requests: [],
+	stripped: [],
+	cssLength: 0
+};
 
 var fs = require("fs"),
 	webpage = require("webpage"),
@@ -37,7 +37,7 @@ var args = [].slice.call(system.args, 1), arg,
 	exposeStylesheets,
 	stripResources,
 	localStorage,
-	outpuDebug;
+	outputDebug;
 
 while (args.length) {
 	arg = args.shift();
@@ -88,7 +88,16 @@ while (args.length) {
 		case "--required-selectors":
 			value = (args.length) ? args.shift() : "";
 			if (value) {
-				required = parseString(value).split(/\s*,\s*/);
+				value = parseString(value);
+				if (typeof value == "string") {
+					value = value.split(/\s*,\s*/).map(function (string) {
+						return "(?:" + string.replace(/([.*+?=^!:${}()|[\]\/\\])/g, '\\$1') + ")";
+					}).join("|");
+
+					value = [value];
+				}
+
+				required = value;
 			}
 			else {
 				fail("Expected a string for '--required-selectors' option");
@@ -137,10 +146,15 @@ while (args.length) {
 		case "--strip-resources":
 			value = (args.length) ? args.shift() : "";
 			if (value) {
-				stripResources = JSON.parse(value);
-				if (typeof stripResources == "string") {
-					stripResources = [stripResources];
+				value = parseString(value);
+				if (typeof value == "string") {
+					value = [value];
 				}
+				value = value.map(function (string) {
+					//throw new Error(string);
+					return new RegExp(string, "i");
+				});
+				stripResources = value;
 			}
 			else {
 				fail("Expected a string for '--strip-resources' option");
@@ -151,7 +165,7 @@ while (args.length) {
 		case "--local-storage":
 			value = (args.length) ? args.shift() : "";
 			if (value) {
-				localStorage = JSON.parse(value);
+				localStorage = parseString(value);
 			}
 			else {
 				fail("Expected a string for '--local-storage' option");
@@ -165,7 +179,7 @@ while (args.length) {
 
 		case "-d":
 		case "--debug":
-			outpuDebug = true;
+			outputDebug = true;
 			break;
 
 		default:
@@ -188,7 +202,7 @@ page.viewportSize = {
 };
 
 if (stripResources) {
-	var baseUrl = url ||fakeUrl;
+	var baseUrl = url || fakeUrl;
 	page.onResourceRequested = function (requestData, request) {
 		var _url = requestData["url"];
 		if (_url.indexOf(baseUrl) > -1) {
@@ -201,7 +215,7 @@ if (stripResources) {
 			l = stripResources.length;
 		// /http:\/\/.+?\.(jpg|png|svg|gif)$/gi
 		while (i < l) {
-			if ((new RegExp(stripResources[i++], "i")).test(_url)) {
+			if (stripResources[i++].test(_url)) {
 				debug.stripped.push(_url);
 				request.abort();
 				break;
@@ -220,7 +234,7 @@ page.onCallback = function (response) {
 		else {
 			result = inlineCSS(response.css);
 		}
-		if (outpuDebug) {
+		if (outputDebug) {
 			debug.cssLength = response.css.length;
 			debug.time = new Date() - debug.time;
 			debug.processingTime = debug.time - debug.loadTime;
@@ -314,7 +328,7 @@ page.onLoadFinished = function () {
 };
 
 if (url) {
-	
+
 	debug.loadTime = new Date();
 	page.open(url);
 
@@ -327,9 +341,9 @@ else {
 
 	html = system.stdin.read();
 	system.stdin.close();
-	
+
 	debug.loadTime = new Date();
-	page.setContent(html, url);
+	page.setContent(html, fakeUrl);
 
 }
 
@@ -399,5 +413,13 @@ function fail(message) {
 }
 
 function parseString(value) {
-	return (value.match(/^(["']).*\1$/)) ? JSON.parse(value) : value;
+	if (value.match(/^(["']).*\1$/)) {
+		value = JSON.parse(value);
+	}
+	if (typeof value == "string") {
+		if (value.match(/^\{.*\}$/) || value.match(/^\[.*\]$/)) {
+			value = JSON.parse(value);
+		}
+	}
+	return value;
 }

@@ -15,6 +15,10 @@
 		}
 		if ("required" in options) {
 			required = options.required;
+
+			required = required.map(function (string) {
+				return new RegExp(string, "i");
+			});
 		}
 	}
 
@@ -106,13 +110,18 @@
 			if (!selector || selector.match(/@/)) {
 				return false;
 			}
-			if (required && required.indexOf(selector) > -1) {
-				return true;
+			if (required) {
+				var found = required.some(function (reg) {
+					return reg.test(selector);
+				});
+				if (found) {
+					return true;
+				}
 			}
 			var matches = doc.querySelectorAll(selector),
 				i = 0,
 				l = matches.length;
-			
+
 			if (l) {
 				if (elements) {
 					while (i < l) {

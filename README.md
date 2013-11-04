@@ -28,7 +28,7 @@ phantomjs index.js <url> [options]
 * `-w, --width [value]` - Determines the width of the viewport. Defaults to 1200.
 * `-h, --height [value]` - Determines the above-the-fold height. Defaults to the actual document height.
 * `-m, --match-media-queries` - Omit media queries that don't match the defined width.
-* `-r, --required-selectors [string]` - Force inclusion of required selectors in the form of a comma-separated selector string. Defaults to no required selectors.
+* `-r, --required-selectors [string|array]` - Force inclusion of required selectors in the form of a comma-separated selector string or an array of regexp strings (remember to escape `.`, `[` and `]` etc). Defaults to no required selectors.
 * `-s, --strip-resources [string|array]` - Avoid loading resources matching the string (or array of strings) turned into regexp pattern(s). Default is no stripping of resources.
 * `-c, --css-only` - Output the raw required CSS without wrapping it in HTML.
 * `-e, --expose-stylesheets [string]` - A variable name (or property on a preexisting variable) to expose an array containing information about the stripped stylesheets in an inline script tag.
@@ -67,6 +67,11 @@ phantomjs index.js http://www.mydomain.com/index.html > index-full-page.html
 Inline all needed CSS for webpage with extra required selectors:
 ```
 phantomjs index.js http://www.mydomain.com/index.html -r ".foo > .bar, #myId" > index-full-page.html
+```
+
+Inline all needed CSS for webpage with extra required regexp selector filters:
+```
+phantomjs index.js http://www.mydomain.com/index.html -r '["\.foo > ", "\.span-\d+"]' > index-full-page.html
 ```
 
 ###### Output options
