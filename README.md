@@ -35,15 +35,13 @@ phantomjs index.js <url> [options]
 * `-t, --insertion-token [string]` - A token (preferably an HTML comment) to control the exact insertion point of the inlined CSS. If omited default insertion is at the first encountered stylesheet.
 * `-i, --css-id [string]` - Determines the id attribute of the inline style tag. By default no id is added.
 * `-f,  --fake-url` - Defines a _fake_ url context. Required when piping in html through `stdin`. Default is null.
-* `-d, --debug` - Prints out an HTML comment in the bottom of the output that exposes some info (see below).
-
-###### Debug info
-* `time` - The time in ms it took to run the script (not including the phantomjs process itself).
-* `loadTime` - The time in ms it took to load the webpage.
-* `processingTime` - The time in ms it took to process and return the CSS in the webpage.
-* `requests` - An array of urls of all requests made by the webpage. Useful for spotting resources to strip.
-* `stripped` - An array of urls of requests aborted by `--strip-resources` option.
-* `cssLength` - The length of the inlined CSS in chars.
+* `-d, --debug` - Prints out an HTML comment in the bottom of the output that exposes some info:
+  * `time` - The time in ms it took to run the script (not including the phantomjs process itself).
+  * `loadTime` - The time in ms it took to load the webpage.
+  * `processingTime` - The time in ms it took to process and return the CSS in the webpage.
+  * `requests` - An array of urls of all requests made by the webpage. Useful for spotting resources to strip.
+  * `stripped` - An array of urls of requests aborted by `--strip-resources` option.
+  * `cssLength` - The length of the inlined CSS in chars.
 
 ##### Examples:
 
