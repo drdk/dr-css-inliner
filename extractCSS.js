@@ -1,13 +1,13 @@
 (function (global, doc) {
 
-	var html = doc.documentElement,
-		width, height,
-		options = global.extractCSSOptions,
-		matchMQ, required,
-		stylesheets = [],
-		mediaStylesheets = [],
-		left,
-		isRunning;
+	var html = doc.documentElement;
+	var width, height;
+	var options = global.extractCSSOptions;
+	var matchMQ, required;
+	var stylesheets = [];
+	var mediaStylesheets = [];
+	var left;
+	var isRunning;
 
 	if (options) {
 		if ("matchMQ" in options) {
@@ -34,8 +34,8 @@
 		});
 		left = mediaStylesheets.slice(0);
 
-		var base = global.location.href.replace(/\/[^/]+$/, "/"),
-			host = global.location.protocol + "//" + global.location.host;
+		var base = global.location.href.replace(/\/[^/]+$/, "/");
+		var host = global.location.protocol + "//" + global.location.host;
 
 		mediaStylesheets.forEach(function (stylesheet) {
 			// avoid crossdomain requests
@@ -72,8 +72,7 @@
 			// define elements to check seletors against
 			if (html.offsetHeight != height) {
 				elements = Array.prototype.slice.call(doc.getElementsByTagName("*")).filter(function (element) {
-					var rect = element.getBoundingClientRect();
-					return (rect.top < height);
+					return (element.getBoundingClientRect().top < height);
 				});
 			}
 
@@ -81,13 +80,13 @@
 				return outputRules(filterCSS(css, elements));
 			}).join("");
 
-			if (typeof global.callPhantom === 'function') {
+			if (typeof global.callPhantom === "function") {
 				global.callPhantom({ css: CSS });
 			}
 			else if (global.console) {
 				console.log({ css: CSS });
 			}
-
+			isRunning = false;
 		}
 
 	}
@@ -118,9 +117,9 @@
 					return true;
 				}
 			}
-			var matches = doc.querySelectorAll(selector),
-				i = 0,
-				l = matches.length;
+			var matches = doc.querySelectorAll(selector);
+			var i = 0;
+			var l = matches.length;
 
 			if (l) {
 				if (elements) {
@@ -154,10 +153,10 @@
 							break;
 						case "@media":
 							if (matchMQ) {
-								var widths = rule.selectors[0].match(/m(?:ax|in)-width:[^)]+/g),
-									mq;
+								var widths = rule.selectors[0].match(/m(?:ax|in)-width:[^)]+/g);
+								var mq;
+								var pair;
 								if (widths) {
-									var pair;
 									mq = {};
 									while (widths.length) {
 										pair = widths.shift().split(/:\s?/);
@@ -191,8 +190,8 @@
 	}
 
 	function parseRules(css) {
-		var matches = css.replace(/\n+/g, " ").match(/(?:[^{}]+\s*\{[^{}]+\})|(?:[^{}]+\{\s*(?:[^{}]+\{[^{}]+\})+\s*\})/g),
-			rules = [];
+		var matches = css.replace(/\n+/g, " ").match(/(?:[^{}]+\s*\{[^{}]+\})|(?:[^{}]+\{\s*(?:[^{}]+\{[^{}]+\})+\s*\})/g);
+		var rules = [];
 		if (matches) {
 			matches.forEach(function (match) {
 				var rule = parseRule(match);
@@ -246,4 +245,4 @@
 	}
 
 
-}(window, document));
+}(this, document));
