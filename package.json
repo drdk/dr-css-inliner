@@ -1,0 +1,20 @@
+{
+  "name": "dr-css-inliner",
+  "version": "0.5.0",
+  "description": "PhantomJS script to inline above-the-fold CSS for a webpage.",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/drdk/dr-css-inliner.git"
+  },
+  "keywords": [
+    "phantomjs",
+    "above-the-fold",
+    "css"
+  ],
+  "author": "rasmusfl0e",
+  "license": "BSD-2-Clause",
+  "bugs": {
+    "url": "https://github.com/drdk/dr-css-inliner/issues"
+  }
+}
