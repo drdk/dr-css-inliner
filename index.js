@@ -7,37 +7,29 @@ var debug = {
 	cssLength: 0
 };
 
-var fs = require("fs"),
-	webpage = require("webpage"),
-	system = require("system");
+var fs = require("fs");
+var webpage = require("webpage");
+var system = require("system");
 
 phantom.onError = function (msg, trace) {
-	var msgStack = ["PHANTOM ERROR: " + msg];
-	if (trace && trace.length) {
-		msgStack.push("TRACE:");
-		trace.forEach(function (t) {
-			msgStack.push(" -> " + (t.file || t.sourceURL) + ": " + t.line + (t.function ? " (in function " + t.function + ")" : ""));
-		});
-	}
-	system.stderr.write(msgStack.join("\n"));
-	phantom.exit(1);
+	outputError("PHANTOM ERROR", msg, trace);
 };
 
-var args = [].slice.call(system.args, 1), arg,
-	html, url, fakeUrl,
-	value,
-	width = 1200,
-	height = 0,
-	matchMQ,
-	required,
-	prefetch,
-	cssOnly = false,
-	cssId,
-	cssToken,
-	exposeStylesheets,
-	stripResources,
-	localStorage,
-	outputDebug;
+var args = [].slice.call(system.args, 1), arg;
+var html, url, fakeUrl;
+var value;
+var width = 1200;
+var height = 0;
+var matchMQ;
+var required;
+var prefetch;
+var cssOnly = false;
+var cssId;
+var cssToken;
+var exposeStylesheets;
+var stripResources;
+var localStorage;
+var outputDebug;
 
 while (args.length) {
 	arg = args.shift();
@@ -204,15 +196,15 @@ page.viewportSize = {
 if (stripResources) {
 	var baseUrl = url || fakeUrl;
 	page.onResourceRequested = function (requestData, request) {
-		var _url = requestData["url"];
+		var _url = requestData.url;
 		if (_url.indexOf(baseUrl) > -1) {
 			_url = _url.slice(baseUrl.length);
 		}
 		if (!_url.match(/^data/) && debug.requests.indexOf(_url) < 0) {
 			debug.requests.push(_url);
 		}
-		var i = 0,
-			l = stripResources.length;
+		var i = 0;
+		var l = stripResources.length;
 		// /http:\/\/.+?\.(jpg|png|svg|gif)$/gi
 		while (i < l) {
 			if (stripResources[i++].test(_url)) {
@@ -250,22 +242,15 @@ page.onCallback = function (response) {
 };
 
 page.onError = function (msg, trace) {
-	var msgStack = ['ERROR: ' + msg];
-	if (trace && trace.length) {
-		msgStack.push('TRACE:');
-		trace.forEach(function (t) {
-			msgStack.push(' -> ' + t.file + ': ' + t.line + (t.function ? ' (in function "' + t.function + '")' : ''));
-		});
-	}
-	fail(msgStack.join('\n'));
+	outputError("PHANTOM PAGE ERROR", msg, trace);
 };
 
 page.onLoadFinished = function () {
 
 	if (!html) {
 		html = page.evaluate(function () {
-			var xhr = new XMLHttpRequest(),
-				html;
+			var xhr = new XMLHttpRequest();
+			var html;
 			xhr.open("get", window.location.href, false);
 			xhr.onload = function () {
 				html = xhr.responseText;
@@ -336,7 +321,7 @@ if (url) {
 else {
 
 	if (!fakeUrl) {
-		fail("Missing 'fake-url' option");
+		fail("Missing \"fake-url\" option");
 	}
 
 	html = system.stdin.read();
@@ -351,8 +336,8 @@ else {
 
 function inlineCSS(css) {
 
-	var tokenAtFirstStylesheet = !cssToken, // auto-insert css if no cssToken has been specified.
-		insertToken = function (m) {
+	var tokenAtFirstStylesheet = !cssToken; // auto-insert css if no cssToken has been specified.
+	var insertToken = function (m) {
 			var string = "";
 			if (tokenAtFirstStylesheet) {
 				tokenAtFirstStylesheet = false;
@@ -360,9 +345,9 @@ function inlineCSS(css) {
 				string = ((whitespace) ? whitespace[0] : "") + cssToken;
 			}
 			return string;
-		},
-		links = [],
-		stylesheets = [];
+		};
+	var links = [];
+	var stylesheets = [];
 
 	if (!cssToken) {
 		cssToken = "<!-- inline CSS insertion token -->";
@@ -374,16 +359,16 @@ function inlineCSS(css) {
 	});
 
 	stylesheets = links.map(function (link) {
-		var urlMatch = link.match(/href="([^"]+)"/),
-			mediaMatch = link.match(/media="([^"]+)"/),
-			url = urlMatch && urlMatch[1],
-			media = mediaMatch && mediaMatch[1];
+		var urlMatch = link.match(/href="([^"]+)"/);
+		var mediaMatch = link.match(/media="([^"]+)"/);
+		var url = urlMatch && urlMatch[1];
+		var media = mediaMatch && mediaMatch[1];
 
 		return { url: url, media: media };
 	});
 
-	var index = html.indexOf(cssToken),
-		length = cssToken.length;
+	var index = html.indexOf(cssToken);
+	var length = cssToken.length;
 
 	if (index == -1) {
 		fail("token not found:\n" + cssToken);
@@ -407,9 +392,20 @@ function inlineCSS(css) {
 
 }
 
+function outputError (context, msg, trace) {
+	var msgStack = [context + ": " + msg];
+	if (trace && trace.length) {
+		msgStack.push("TRACE:");
+		trace.forEach(function (t) {
+			msgStack.push(" -> " + (t.file || t.sourceURL) + ": " + t.line + (t.function ? " (in function " + t.function + ")" : ""));
+		});
+	}
+	fail(msgStack.join("\n"));
+}
+
 function fail(message) {
 	system.stderr.write(message);
-	phantom.exit();
+	phantom.exit(1);
 }
 
 function parseString(value) {

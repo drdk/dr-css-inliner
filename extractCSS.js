@@ -39,7 +39,7 @@
 
 		mediaStylesheets.forEach(function (stylesheet) {
 			// avoid crossdomain requests
-			if (stylesheet.href && stylesheet.href.indexOf(host) == 0) {
+			if (stylesheet.href && stylesheet.href.indexOf(host) === 0) {
 				fetchStylesheet(stylesheet.href, function (text) {
 					var index = left.indexOf(stylesheet);
 					if (index > -1) {
@@ -49,7 +49,7 @@
 						return "url(" + quote + pathRelativeToPage(base, stylesheet.href, url) + quote + ")";
 					});
 					stylesheets.push(text);
-					if (left.length == 0) {
+					if (left.length === 0) {
 						complete();
 					}
 				});
@@ -59,7 +59,7 @@
 				if (index > -1) {
 					left.splice(index, 1);
 				}
-				if (left.length == 0) {
+				if (left.length === 0) {
 					complete();
 				}
 			}
@@ -101,11 +101,8 @@
 
 		return selectors.map(function (selector) {
 			// strip comments
-			return selector.replace(/\/\*[\s\S]+?\*\//g, "").replace(/(^\s+)|(\s+$)/g, "");
+			return selector.replace(/\/\*[\s\S]+?\*\//g, "").replace(/(?:^\s+)|(?:\s+$)/g, "");
 		}).filter(function (selector) {
-			if (selector.indexOf(":") > -1) {
-				selector = selector.replace(/(?:::?)(?:after|before|link|visited|hover|active|focus|invalid|valid|read-only|target|(?:-[a-zA-Z-]+))\s*$/, "");
-			}
 			if (!selector || selector.match(/@/)) {
 				return false;
 			}
@@ -116,6 +113,9 @@
 				if (found) {
 					return true;
 				}
+			}
+			if (selector.indexOf(":") > -1) {
+				selector = selector.replace(/(?:::?)(?:after|before|link|visited|hover|active|focus|invalid|valid|read-only|target|(?:-[a-zA-Z-]+))\s*$/g, "");
 			}
 			var matches = doc.querySelectorAll(selector);
 			var i = 0;
@@ -152,9 +152,9 @@
 							matchingSelectors = ["@font-face"];
 							break;
 						case "@media":
+							var mq;
 							if (matchMQ) {
 								var widths = rule.selectors[0].match(/m(?:ax|in)-width:[^)]+/g);
-								var mq;
 								var pair;
 								if (widths) {
 									mq = {};
@@ -209,11 +209,11 @@
 		return {
 			selectors: match && match[1].split(/\s*,\s*/),
 			css: match && match[2]
-		}
+		};
 	}
 
 	function pathRelativeToPage(basepath, csspath, sourcepath) {
-		while (sourcepath.indexOf("../") == 0) {
+		while (sourcepath.indexOf("../") === 0) {
 			sourcepath = sourcepath.slice(3);
 			csspath = csspath.replace(/\/[^/]+\/[^/]*$/, "/");
 		}
