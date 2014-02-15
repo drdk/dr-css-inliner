@@ -101,11 +101,8 @@
 
 		return selectors.map(function (selector) {
 			// strip comments
-			return selector.replace(/\/\*[\s\S]+?\*\//g, "").replace(/(^\s+)|(\s+$)/g, "");
+			return selector.replace(/\/\*[\s\S]+?\*\//g, "").replace(/(?:^\s+)|(?:\s+$)/g, "");
 		}).filter(function (selector) {
-			if (selector.indexOf(":") > -1) {
-				selector = selector.replace(/(?:::?)(?:after|before|link|visited|hover|active|focus|invalid|valid|read-only|target|(?:-[a-zA-Z-]+))\s*$/, "");
-			}
 			if (!selector || selector.match(/@/)) {
 				return false;
 			}
@@ -116,6 +113,9 @@
 				if (found) {
 					return true;
 				}
+			}
+			if (selector.indexOf(":") > -1) {
+				selector = selector.replace(/(?:::?)(?:after|before|link|visited|hover|active|focus|invalid|valid|read-only|target|(?:-[a-zA-Z-]+))\s*$/g, "");
 			}
 			var matches = doc.querySelectorAll(selector);
 			var i = 0;
