@@ -3,6 +3,8 @@
   "version": "0.5.1",
   "description": "PhantomJS script to inline above-the-fold CSS for a webpage.",
   "main": "index.js",
+  "preferGlobal": "true",
+  "bin": { "css-inliner": "index.js" },
   "repository": {
     "type": "git",
     "url": "https://github.com/drdk/dr-css-inliner.git"
