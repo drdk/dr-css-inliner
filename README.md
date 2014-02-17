@@ -359,3 +359,6 @@ cat not-yet-public.html | phantomjs index.js -f http://www.mydomain.com/index.ht
 ```
 
 All loading of assets will be loaded relative to the _fake_ url - meaning they need to be available already.
+
+
+[![Analytics](https://ga-beacon.appspot.com/UA-8318361-2/drdk/dr-css-inliner)](https://github.com/igrigorik/ga-beacon)

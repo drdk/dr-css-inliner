@@ -1,6 +1,6 @@
 {
   "name": "dr-css-inliner",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "PhantomJS script to inline above-the-fold CSS for a webpage.",
   "main": "index.js",
   "repository": {
