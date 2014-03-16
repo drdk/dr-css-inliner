@@ -278,7 +278,7 @@ phantomjs index.js index.html -t "<!-- CSS goes here -->"
 
 ###### Avoid loading unneeded resources
 
-`-s, --strip-resources [string|array]`
+`-s, --strip-resources [string]`
 
 Doing:
 
