@@ -28,8 +28,8 @@ phantomjs index.js <url> [options]
 * `-w, --width [value]` - Determines the width of the viewport. Defaults to 1200.
 * `-h, --height [value]` - Determines the above-the-fold height. Defaults to the actual document height.
 * `-m, --match-media-queries` - Omit media queries that don't match the defined width.
-* `-r, --required-selectors [string|array]` - Force inclusion of required selectors in the form of a comma-separated selector string or an array of regexp strings (remember to escape `.`, `[` and `]` etc). Defaults to no required selectors.
-* `-s, --strip-resources [string|array]` - Avoid loading resources matching the string (or array of strings) turned into regexp pattern(s). Default is no stripping of resources.
+* `-r, --required-selectors [string]` - Force inclusion of required selectors in the form of a comma-separated selector string or an array (as a JSON string) of regexp strings (remember to escape `.`, `[` and `]` etc). Defaults to no required selectors.
+* `-s, --strip-resources [string]` - Avoid loading resources matching the string or array (as a JSON string) of strings turned into regexp pattern(s). Default is no stripping of resources.
 * `-c, --css-only` - Output the raw required CSS without wrapping it in HTML.
 * `-e, --expose-stylesheets [string]` - A variable name (or property on a preexisting variable) to expose an array containing information about the stripped stylesheets in an inline script tag.
 * `-t, --insertion-token [string]` - A token (preferably an HTML comment) to control the exact insertion point of the inlined CSS. If omited default insertion is at the first encountered stylesheet.
@@ -69,7 +69,7 @@ phantomjs index.js http://www.mydomain.com/index.html -r ".foo > .bar, #myId" > 
 
 Inline all needed CSS for webpage with extra required regexp selector filters:
 ```
-phantomjs index.js http://www.mydomain.com/index.html -r '["\.foo > ", "\.span-\d+"]' > index-full-page.html
+phantomjs index.js http://www.mydomain.com/index.html -r '["\\.foo > ", "\\.span-\\d+"]' > index-full-page.html
 ```
 
 ###### Output options
@@ -283,7 +283,7 @@ phantomjs index.js index.html -t "<!-- CSS goes here -->"
 Doing:
 
 ```
-phantomjs index.js index.html -s ["\.(jpg|gif|png)$","webstat\.js$"]
+phantomjs index.js index.html -s '["\\.(jpg|gif|png)$","webstat\\.js$"]'
 ```
 
 ... would avoid loading images and a given web statistic script.
