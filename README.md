@@ -17,10 +17,22 @@ Once Phantomjs has loaded the page all stylesheets with no `media` set or with `
 
 The CSS is inlined as per the supplied options and all stylesheets and style elements stripped from the webpage html. You can opt to expose the stripped stylesheets as an array in a script tag through the `-e` (`--expose-stylesheets`) option.
 
+## Install
+
+```
+npm install dr-css-inliner -g
+```
+
 ## Usage:
 
 ```
 phantomjs index.js <url> [options]
+```
+
+Or as via the globally installed bin:
+
+```
+css-inliner <url> [options]
 ```
 
 #### Options:
@@ -29,7 +41,7 @@ phantomjs index.js <url> [options]
 * `-h, --height [value]` - Determines the above-the-fold height. Defaults to the actual document height.
 * `-m, --match-media-queries` - Omit media queries that don't match the defined width.
 * `-r, --required-selectors [string]` - Force inclusion of required selectors in the form of a comma-separated selector string or an array (as a JSON string) of regexp strings (remember to escape `.`, `[` and `]` etc). Defaults to no required selectors.
-* `-s, --strip-resources [string]` - Avoid loading resources matching the string or array (as a JSON string) of strings turned into regexp pattern(s). Default is no stripping of resources.
+* `-s, --strip-resources [string]` - Avoid loading resources (while extracting CSS) matching the string or array (as a JSON string) of strings turned into regexp pattern(s). Used to speed up execution of CSS inlining. Default is no stripping of resources.
 * `-c, --css-only` - Output the raw required CSS without wrapping it in HTML.
 * `-e, --expose-stylesheets [string]` - A variable name (or property on a preexisting variable) to expose an array containing information about the stripped stylesheets in an inline script tag.
 * `-t, --insertion-token [string]` - A token (preferably an HTML comment) to control the exact insertion point of the inlined CSS. If omited default insertion is at the first encountered stylesheet.
@@ -40,7 +52,7 @@ phantomjs index.js <url> [options]
   * `loadTime` - The time in ms it took to load the webpage.
   * `processingTime` - The time in ms it took to process and return the CSS in the webpage.
   * `requests` - An array of urls of all requests made by the webpage. Useful for spotting resources to strip.
-  * `stripped` - An array of urls of requests aborted by `--strip-resources` option.
+  * `stripped` - An array of urls of requests aborted by the `--strip-resources` option.
   * `cssLength` - The length of the inlined CSS in chars.
 
 ##### Examples:
@@ -49,27 +61,27 @@ phantomjs index.js <url> [options]
 
 Only inline the needed above-the-fold CSS for smaller devices:
 ```
-phantomjs index.js http://www.mydomain.com/index.html -w 350 -h 480 -m > index-mobile.html
+css-inliner http://www.mydomain.com/index.html -w 350 -h 480 -m > index-mobile.html
 ```
 
 Inline all needed CSS for the above-the-fold content on all devices (default 1200px and smaller):
 ```
-phantomjs index.js http://www.mydomain.com/index.html -h 800 > index-page-top.html
+css-inliner http://www.mydomain.com/index.html -h 800 > index-page-top.html
 ```
 
 Inline all needed CSS for webpage:
 ```
-phantomjs index.js http://www.mydomain.com/index.html > index-full-page.html
+css-inliner http://www.mydomain.com/index.html > index-full-page.html
 ```
 
 Inline all needed CSS for webpage with extra required selectors:
 ```
-phantomjs index.js http://www.mydomain.com/index.html -r ".foo > .bar, #myId" > index-full-page.html
+css-inliner http://www.mydomain.com/index.html -r ".foo > .bar, #myId" > index-full-page.html
 ```
 
 Inline all needed CSS for webpage with extra required regexp selector filters:
 ```
-phantomjs index.js http://www.mydomain.com/index.html -r '["\\.foo > ", "\\.span-\\d+"]' > index-full-page.html
+css-inliner http://www.mydomain.com/index.html -r '["\\.foo > ", "\\.span-\\d+"]' > index-full-page.html
 ```
 
 ###### Output options
@@ -106,7 +118,7 @@ index.html:
 Doing:
 
 ```
-phantomjs index.js index.html
+css-inliner index.html
 ```
 
 ...would get you:
@@ -133,7 +145,7 @@ phantomjs index.js index.html
 `-c, --css-only`
 
 ```
-phantomjs index.js index.html -c
+css-inliner index.html -c
 ```
 
 ...would get you:
@@ -151,7 +163,7 @@ phantomjs index.js index.html -c
 __Single global variable:__
 
 ```
-phantomjs index.js index.html -e stylesheets
+css-inliner index.html -e stylesheets
 ```
 
 ...would get you:
@@ -179,7 +191,7 @@ phantomjs index.js index.html -e stylesheets
 __Namespaced property:__
 
 ```
-phantomjs index.js index.html -e myNamespace.stylesheets
+css-inliner index.html -e myNamespace.stylesheets
 ```
 
 provided you had an `index.html` like:
@@ -251,7 +263,7 @@ provided you had an `index.html` like:
 ```
 
 ```
-phantomjs index.js index.html -t "<!-- CSS goes here -->"
+css-inliner index.html -t "<!-- CSS goes here -->"
 ```
 
 ...would get you:
@@ -283,7 +295,7 @@ phantomjs index.js index.html -t "<!-- CSS goes here -->"
 Doing:
 
 ```
-phantomjs index.js index.html -s '["\\.(jpg|gif|png)$","webstat\\.js$"]'
+css-inliner index.html -s '["\\.(jpg|gif|png)$","webstat\\.js$"]'
 ```
 
 ... would avoid loading images and a given web statistic script.
@@ -294,7 +306,7 @@ phantomjs index.js index.html -s '["\\.(jpg|gif|png)$","webstat\\.js$"]'
 
 Doing:
 ```
-phantomjs index.js index.html -d
+css-inliner index.html -d
 ```
 
 ...would get you:
@@ -326,7 +338,7 @@ phantomjs index.js index.html -d
 
 Doing:
 ```
-phantomjs index.js index.html -i my-inline-css
+css-inliner index.html -i my-inline-css
 ```
 
 ...would get you:
@@ -352,10 +364,10 @@ phantomjs index.js index.html -i my-inline-css
 
 `-f, --fake-url [string]`
 
-If you need to parse HTML that is not yet publicly available you can pipe it into `dr-css-inliner`. Below is a contrived example (in a real-world example imagine an httpfilter or similar in place of `cat`):
+If you need to parse HTML that is not yet publicly available you can pipe it into `css-inliner`. Below is a contrived example (in a real-world example imagine an httpfilter or similar in place of `cat`):
 
 ```
-cat not-yet-public.html | phantomjs index.js -f http://www.mydomain.com/index.html
+cat not-yet-public.html | css-inliner -f http://www.mydomain.com/index.html
 ```
 
 All loading of assets will be loaded relative to the _fake_ url - meaning they need to be available already.
