@@ -397,7 +397,7 @@ function inlineCSS(css) {
 		}).join("");
 	}
 
-	return html.slice(0, index - 1) + replacement + html.slice(index + length);
+	return html.slice(0, index) + replacement + html.slice(index + length);
 
 }
 
