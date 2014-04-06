@@ -301,7 +301,14 @@ page.onLoadFinished = function () {
 		};
 	}
 
-	var scriptPath = phantom.libraryPath + "/extractCSS.js";
+	var scriptPath = "/extractCSS.js";
+
+	if (fs.isLink(system.args[0])) {
+		scriptPath = fs.readLink(system.args[0]).replace(/\/[\/]+$/, "");
+	}
+	else {
+		scriptPath = phantom.libraryPath + scriptPath;
+	}
 
 	if (!fs.isFile(scriptPath)) {
 		fail("Unable to locate script at: " + scriptPath);
