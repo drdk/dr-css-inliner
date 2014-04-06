@@ -117,6 +117,9 @@
 			if (selector.indexOf(":") > -1) {
 				selector = selector.replace(/(?:::?)(?:after|before|link|visited|hover|active|focus|invalid|valid|read-only|target|(?:-[a-zA-Z-]+))\s*$/g, "");
 			}
+			if (selector.length == 0) {
+				return true;
+			}
 			var matches = doc.querySelectorAll(selector);
 			var i = 0;
 			var l = matches.length;
