@@ -345,6 +345,10 @@ else {
 
 function inlineCSS(css) {
 
+	if (!css) {
+		return html;
+	}
+
 	var tokenAtFirstStylesheet = !cssToken; // auto-insert css if no cssToken has been specified.
 	var insertToken = function (m) {
 			var string = "";
