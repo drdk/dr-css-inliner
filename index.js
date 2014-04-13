@@ -23,6 +23,7 @@ var value;
 var width = 1200;
 var height = 0;
 var matchMQ;
+var allowCrossDomain;
 var required;
 var prefetch;
 var cssOnly = false;
@@ -76,6 +77,11 @@ while (args.length) {
 		case "-m":
 		case "--match-media-queries":
 			matchMQ = true;
+			break;
+
+		case "-x":
+		case "--allow-cross-domain":
+			allowCrossDomain = true;
 			break;
 
 		case "-r":
@@ -190,6 +196,10 @@ while (args.length) {
 
 var page = webpage.create();
 
+if ( allowCrossDomain ) {
+	page.settings.webSecurityEnabled = false;
+}
+
 page.viewportSize = {
 	width: width,
 	height: height || 800
@@ -268,6 +278,10 @@ page.onLoadFinished = function () {
 
 	if (matchMQ) {
 		options.matchMQ = true;
+	}
+
+	if (allowCrossDomain) {
+		options.allowCrossDomain = true;
 	}
 
 	if (required) {
