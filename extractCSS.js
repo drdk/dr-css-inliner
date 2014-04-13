@@ -3,7 +3,7 @@
 	var html = doc.documentElement;
 	var width, height;
 	var options = global.extractCSSOptions;
-	var matchMQ, required;
+	var matchMQ, allowCrossDomain, required;
 	var stylesheets = [];
 	var mediaStylesheets = [];
 	var left;
@@ -12,6 +12,9 @@
 	if (options) {
 		if ("matchMQ" in options) {
 			matchMQ = options.matchMQ;
+		}
+		if ("allowCrossDomain" in options) {
+			allowCrossDomain = options.allowCrossDomain;
 		}
 		if ("required" in options) {
 			required = options.required;
@@ -38,8 +41,7 @@
 		var host = global.location.protocol + "//" + global.location.host;
 
 		mediaStylesheets.forEach(function (stylesheet) {
-			// avoid crossdomain requests
-			if (stylesheet.href && stylesheet.href.indexOf(host) === 0) {
+			if ((stylesheet.href && stylesheet.href.indexOf(host) === 0) || (stylesheet.href && allowCrossDomain)) {
 				fetchStylesheet(stylesheet.href, function (text) {
 					var index = left.indexOf(stylesheet);
 					if (index > -1) {
