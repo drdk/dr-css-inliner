@@ -47,6 +47,7 @@ css-inliner <url> [options]
 * `-t, --insertion-token [string]` - A token (preferably an HTML comment) to control the exact insertion point of the inlined CSS. If omited default insertion is at the first encountered stylesheet.
 * `-i, --css-id [string]` - Determines the id attribute of the inline style tag. By default no id is added.
 * `-f,  --fake-url` - Defines a _fake_ url context. Required when piping in html through `stdin`. Default is null.
+* `-x,  --allow-cross-domain` - Allow cross-domain requests (e.g. CSS is located on CDN domain).
 * `-d, --debug` - Prints out an HTML comment in the bottom of the output that exposes some info:
   * `time` - The time in ms it took to run the script (not including the phantomjs process itself).
   * `loadTime` - The time in ms it took to load the webpage.
