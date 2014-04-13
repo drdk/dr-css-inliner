@@ -103,6 +103,7 @@
 			// strip comments
 			return selector.replace(/\/\*[\s\S]+?\*\//g, "").replace(/(?:^\s+)|(?:\s+$)/g, "");
 		}).filter(function (selector) {
+
 			if (!selector || selector.match(/@/)) {
 				return false;
 			}
@@ -115,11 +116,14 @@
 				}
 			}
 			if (selector.indexOf(":") > -1) {
-				selector = selector.replace(/(?:::?)(?:after|before|link|visited|hover|active|focus|invalid|valid|read-only|target|(?:-[a-zA-Z-]+))\s*$/g, "");
+				// strip pseudo-classes that may not be directly selectable or can change on userinteraction
+				selector = selector.replace(/(?:::?)(?:after|before|link|visited|hover|active|focus|selection|checked|selected|optional|required|invalid|valid|in-range|read-only|read-write|target|(?:-[a-zA-Z-]+))\s*$/g, "");
 			}
+			
 			if (selector.length == 0) {
 				return true;
 			}
+			
 			var matches = doc.querySelectorAll(selector);
 			var i = 0;
 			var l = matches.length;
