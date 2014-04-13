@@ -1,5 +1,3 @@
-#!/usr/bin/env phantomjs
-
 var debug = {
 	time: new Date(),
 	loadTime: null,

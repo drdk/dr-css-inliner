@@ -20,19 +20,13 @@ The CSS is inlined as per the supplied options and all stylesheets and style ele
 ## Install
 
 ```
-npm install dr-css-inliner -g
+npm install dr-css-inliner
 ```
 
 ## Usage:
 
 ```
 phantomjs index.js <url> [options]
-```
-
-Or as via the globally installed bin:
-
-```
-css-inliner <url> [options]
 ```
 
 #### Options:
@@ -47,7 +41,6 @@ css-inliner <url> [options]
 * `-t, --insertion-token [string]` - A token (preferably an HTML comment) to control the exact insertion point of the inlined CSS. If omited default insertion is at the first encountered stylesheet.
 * `-i, --css-id [string]` - Determines the id attribute of the inline style tag. By default no id is added.
 * `-f,  --fake-url` - Defines a _fake_ url context. Required when piping in html through `stdin`. Default is null.
-* `-x,  --allow-cross-domain` - Allow cross-domain requests (e.g. CSS is located on CDN domain).
 * `-d, --debug` - Prints out an HTML comment in the bottom of the output that exposes some info:
   * `time` - The time in ms it took to run the script (not including the phantomjs process itself).
   * `loadTime` - The time in ms it took to load the webpage.
@@ -62,27 +55,27 @@ css-inliner <url> [options]
 
 Only inline the needed above-the-fold CSS for smaller devices:
 ```
-css-inliner http://www.mydomain.com/index.html -w 350 -h 480 -m > index-mobile.html
+phantomjs index.js http://www.mydomain.com/index.html -w 350 -h 480 -m > index-mobile.html
 ```
 
 Inline all needed CSS for the above-the-fold content on all devices (default 1200px and smaller):
 ```
-css-inliner http://www.mydomain.com/index.html -h 800 > index-page-top.html
+phantomjs index.js http://www.mydomain.com/index.html -h 800 > index-page-top.html
 ```
 
 Inline all needed CSS for webpage:
 ```
-css-inliner http://www.mydomain.com/index.html > index-full-page.html
+phantomjs index.js http://www.mydomain.com/index.html > index-full-page.html
 ```
 
 Inline all needed CSS for webpage with extra required selectors:
 ```
-css-inliner http://www.mydomain.com/index.html -r ".foo > .bar, #myId" > index-full-page.html
+phantomjs index.js http://www.mydomain.com/index.html -r ".foo > .bar, #myId" > index-full-page.html
 ```
 
 Inline all needed CSS for webpage with extra required regexp selector filters:
 ```
-css-inliner http://www.mydomain.com/index.html -r '["\\.foo > ", "\\.span-\\d+"]' > index-full-page.html
+phantomjs index.js http://www.mydomain.com/index.html -r '["\\.foo > ", "\\.span-\\d+"]' > index-full-page.html
 ```
 
 ###### Output options
@@ -119,7 +112,7 @@ index.html:
 Doing:
 
 ```
-css-inliner index.html
+phantomjs index.js index.html
 ```
 
 ...would get you:
@@ -146,7 +139,7 @@ css-inliner index.html
 `-c, --css-only`
 
 ```
-css-inliner index.html -c
+phantomjs index.js index.html -c
 ```
 
 ...would get you:
@@ -164,7 +157,7 @@ css-inliner index.html -c
 __Single global variable:__
 
 ```
-css-inliner index.html -e stylesheets
+phantomjs index.js index.html -e stylesheets
 ```
 
 ...would get you:
@@ -192,7 +185,7 @@ css-inliner index.html -e stylesheets
 __Namespaced property:__
 
 ```
-css-inliner index.html -e myNamespace.stylesheets
+phantomjs index.js index.html -e myNamespace.stylesheets
 ```
 
 provided you had an `index.html` like:
@@ -264,7 +257,7 @@ provided you had an `index.html` like:
 ```
 
 ```
-css-inliner index.html -t "<!-- CSS goes here -->"
+phantomjs index.js index.html -t "<!-- CSS goes here -->"
 ```
 
 ...would get you:
@@ -296,7 +289,7 @@ css-inliner index.html -t "<!-- CSS goes here -->"
 Doing:
 
 ```
-css-inliner index.html -s '["\\.(jpg|gif|png)$","webstat\\.js$"]'
+phantomjs index.js index.html -s '["\\.(jpg|gif|png)$","webstat\\.js$"]'
 ```
 
 ... would avoid loading images and a given web statistic script.
@@ -307,7 +300,7 @@ css-inliner index.html -s '["\\.(jpg|gif|png)$","webstat\\.js$"]'
 
 Doing:
 ```
-css-inliner index.html -d
+phantomjs index.js index.html -d
 ```
 
 ...would get you:
@@ -339,7 +332,7 @@ css-inliner index.html -d
 
 Doing:
 ```
-css-inliner index.html -i my-inline-css
+phantomjs index.js index.html -i my-inline-css
 ```
 
 ...would get you:
@@ -365,13 +358,23 @@ css-inliner index.html -i my-inline-css
 
 `-f, --fake-url [string]`
 
-If you need to parse HTML that is not yet publicly available you can pipe it into `css-inliner`. Below is a contrived example (in a real-world example imagine an httpfilter or similar in place of `cat`):
+If you need to parse HTML that is not yet publicly available you can pipe it into `dr-css-inliner`. Below is a contrived example (in a real-world example imagine an httpfilter or similar in place of `cat`):
 
 ```
-cat not-yet-public.html | css-inliner -f http://www.mydomain.com/index.html
+cat not-yet-public.html | phantomjs index.js -f http://www.mydomain.com/index.html
 ```
 
 All loading of assets will be loaded relative to the _fake_ url - meaning they need to be available already.
+
+
+---
+
+## Changelog
+
+### 0.5.4
+
+`css-inliner` bin removed due to not working on unix.
+
 
 
 [![Analytics](https://ga-beacon.appspot.com/UA-8318361-2/drdk/dr-css-inliner)](https://github.com/igrigorik/ga-beacon)
