@@ -13,9 +13,7 @@
 		if ("matchMQ" in options) {
 			matchMQ = options.matchMQ;
 		}
-		if ("allowCrossDomain" in options) {
-			allowCrossDomain = options.allowCrossDomain;
-		}
+		allowCrossDomain = true;
 		if ("required" in options) {
 			required = options.required;
 
@@ -30,6 +28,9 @@
 			return;
 		}
 		isRunning = true;
+
+		//document.boo();
+
 		width = html.offsetWidth;
 		height = global.innerHeight;
 		mediaStylesheets = Array.prototype.slice.call(doc.styleSheets).filter(function (stylesheet) {
@@ -126,7 +127,15 @@
 				return true;
 			}
 			
-			var matches = doc.querySelectorAll(selector);
+			var matches = [];
+
+			try {
+
+				matches = doc.querySelectorAll(selector);
+
+			}
+			catch(e){}
+			
 			var i = 0;
 			var l = matches.length;
 
@@ -151,8 +160,8 @@
 			matchedRules = [];
 
 		rules.forEach(function (rule) {
-			var matchingSelectors = [],
-				atRuleMatch = rule.selectors[0].match(/^\s*(@[a-z\-]+)/);
+			var matchingSelectors = [];
+			var atRuleMatch = rule.selectors[0].match(/^\s*(@[a-z\-]+)/);
 			if (rule.selectors) {
 				if (atRuleMatch) {
 

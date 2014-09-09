@@ -371,6 +371,18 @@ All loading of assets will be loaded relative to the _fake_ url - meaning they n
 
 ## Changelog
 
+### 0.6.0
+
+Features:
+
+* `-o, --output` option added.
+
+Changes:
+
+* Only errors in the inliner will halt execution. Remote script errors are ignored - but logged in `debug.errors`. 
+* the `-x, --allow-cross-domain` option is deprecated and cross domain requests allowed by default.
+* `debug.requests` is now populated by default regardless of the `--strip-resources`  option.
+
 ### 0.5.4
 
 `css-inliner` bin removed due to not working on unix.

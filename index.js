@@ -4,6 +4,7 @@ var debug = {
 	processingTime: null,
 	requests: [],
 	stripped: [],
+	errors: [],
 	cssLength: 0
 };
 
@@ -21,7 +22,6 @@ var value;
 var width = 1200;
 var height = 0;
 var matchMQ;
-var allowCrossDomain;
 var required;
 var prefetch;
 var cssOnly = false;
@@ -31,6 +31,15 @@ var exposeStylesheets;
 var stripResources;
 var localStorage;
 var outputDebug;
+var outputPath;
+var scriptPath = "/extractCSS.js";
+
+if (fs.isLink(system.args[0])) {
+	scriptPath = fs.readLink(system.args[0]).replace(/\/[\/]+$/, "");
+}
+else {
+	scriptPath = phantom.libraryPath + scriptPath;
+}
 
 while (args.length) {
 	arg = args.shift();
@@ -79,7 +88,7 @@ while (args.length) {
 
 		case "-x":
 		case "--allow-cross-domain":
-			allowCrossDomain = true;
+			//allowCrossDomain = true;
 			break;
 
 		case "-r":
@@ -175,6 +184,17 @@ while (args.length) {
 			cssOnly = true;
 			break;
 
+		case "-o":
+		case "--output":
+			value = (args.length) ? args.shift() : "";
+			if (value) {
+				outputPath = value;
+			}
+			else {
+				fail("Expected a string for '--output' option");
+			}
+			break;
+
 		case "-d":
 		case "--debug":
 			outputDebug = true;
@@ -194,37 +214,38 @@ while (args.length) {
 
 var page = webpage.create();
 
-if ( allowCrossDomain ) {
-	page.settings.webSecurityEnabled = false;
-}
+page.settings.webSecurityEnabled = false;
 
 page.viewportSize = {
 	width: width,
 	height: height || 800
 };
 
-if (stripResources) {
-	var baseUrl = url || fakeUrl;
-	page.onResourceRequested = function (requestData, request) {
-		var _url = requestData.url;
-		if (_url.indexOf(baseUrl) > -1) {
-			_url = _url.slice(baseUrl.length);
-		}
-		if (!_url.match(/^data/) && debug.requests.indexOf(_url) < 0) {
-			debug.requests.push(_url);
-		}
+
+var baseUrl = url || fakeUrl;
+page.onResourceRequested = function (requestData, request) {
+	var _url = requestData.url;
+	if (_url.indexOf(baseUrl) > -1) {
+		_url = _url.slice(baseUrl.length);
+	}
+	if (outputDebug && !_url.match(/^data/) && debug.requests.indexOf(_url) < 0) {
+		debug.requests.push(_url);
+	}
+	if (stripResources) {
 		var i = 0;
 		var l = stripResources.length;
 		// /http:\/\/.+?\.(jpg|png|svg|gif)$/gi
 		while (i < l) {
 			if (stripResources[i++].test(_url)) {
-				debug.stripped.push(_url);
+				if (outputDebug) {
+					debug.stripped.push(_url);
+				}
 				request.abort();
 				break;
 			}
 		}
-	};
-}
+	}
+};
 
 page.onCallback = function (response) {
 	page.close();
@@ -242,7 +263,12 @@ page.onCallback = function (response) {
 			debug.processingTime = debug.time - debug.loadTime;
 			result += "\n<!--\n\t" + JSON.stringify(debug) + "\n-->";
 		}
-		system.stdout.write(result);
+		if (outputPath) {
+			fs.write(outputPath, result);
+		}
+		else {
+			system.stdout.write(result);
+		}
 		phantom.exit();
 	}
 	else {
@@ -278,10 +304,6 @@ page.onLoadFinished = function () {
 		options.matchMQ = true;
 	}
 
-	if (allowCrossDomain) {
-		options.allowCrossDomain = true;
-	}
-
 	if (required) {
 		options.required = required;
 	}
@@ -311,15 +333,6 @@ page.onLoadFinished = function () {
 			width: width,
 			height: _height
 		};
-	}
-
-	var scriptPath = "/extractCSS.js";
-
-	if (fs.isLink(system.args[0])) {
-		scriptPath = fs.readLink(system.args[0]).replace(/\/[\/]+$/, "");
-	}
-	else {
-		scriptPath = phantom.libraryPath + scriptPath;
 	}
 
 	if (!fs.isFile(scriptPath)) {
@@ -418,14 +431,27 @@ function inlineCSS(css) {
 }
 
 function outputError (context, msg, trace) {
-	var msgStack = [context + ": " + msg];
+	var errMsg = "";
+	var errStack = [msg];
+	var errInRemoteScript = false;
 	if (trace && trace.length) {
-		msgStack.push("TRACE:");
+		errStack.push("TRACE:");
 		trace.forEach(function (t) {
-			msgStack.push(" -> " + (t.file || t.sourceURL) + ": " + t.line + (t.function ? " (in function " + t.function + ")" : ""));
+			var source = t.file || t.sourceURL;
+			if (!errInRemoteScript && source != scriptPath) {
+				errInRemoteScript = true;
+			}
+			errStack.push(" -> " + source + ": " + t.line + (t.function ? " (in function " + t.function + ")" : ""));
 		});
 	}
-	fail(msgStack.join("\n"));
+	errMsg = errStack.join("\n");
+	if (errInRemoteScript) {
+		debug.errors.push(errMsg);
+	}
+	else {
+		fail(context + ": " + errStack.join("\n"));
+	}
+	
 }
 
 function fail(message) {
