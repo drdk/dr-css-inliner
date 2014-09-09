@@ -31,6 +31,7 @@ phantomjs index.js <url> [options]
 
 #### Options:
 
+* `-o, --output [string]` - Write the output to a file. If omitted the output is written to `stdout`.
 * `-w, --width [value]` - Determines the width of the viewport. Defaults to 1200.
 * `-h, --height [value]` - Determines the above-the-fold height. Defaults to the actual document height.
 * `-m, --match-media-queries` - Omit media queries that don't match the defined width.
@@ -47,6 +48,7 @@ phantomjs index.js <url> [options]
   * `processingTime` - The time in ms it took to process and return the CSS in the webpage.
   * `requests` - An array of urls of all requests made by the webpage. Useful for spotting resources to strip.
   * `stripped` - An array of urls of requests aborted by the `--strip-resources` option.
+  * `errors` - An array of errors that ocurred on the page.
   * `cssLength` - The length of the inlined CSS in chars.
 
 ##### Examples:
@@ -55,27 +57,27 @@ phantomjs index.js <url> [options]
 
 Only inline the needed above-the-fold CSS for smaller devices:
 ```
-phantomjs index.js http://www.mydomain.com/index.html -w 350 -h 480 -m > index-mobile.html
+phantomjs index.js http://www.mydomain.com/index.html -w 350 -h 480 -m -o index-mobile.html
 ```
 
 Inline all needed CSS for the above-the-fold content on all devices (default 1200px and smaller):
 ```
-phantomjs index.js http://www.mydomain.com/index.html -h 800 > index-page-top.html
+phantomjs index.js http://www.mydomain.com/index.html -h 800 -o index-page-top.html
 ```
 
 Inline all needed CSS for webpage:
 ```
-phantomjs index.js http://www.mydomain.com/index.html > index-full-page.html
+phantomjs index.js http://www.mydomain.com/index.html -o index-full-page.html
 ```
 
 Inline all needed CSS for webpage with extra required selectors:
 ```
-phantomjs index.js http://www.mydomain.com/index.html -r ".foo > .bar, #myId" > index-full-page.html
+phantomjs index.js http://www.mydomain.com/index.html -r ".foo > .bar, #myId" -o index-full-page.html
 ```
 
 Inline all needed CSS for webpage with extra required regexp selector filters:
 ```
-phantomjs index.js http://www.mydomain.com/index.html -r '["\\.foo > ", "\\.span-\\d+"]' > index-full-page.html
+phantomjs index.js http://www.mydomain.com/index.html -r '["\\.foo > ", "\\.span-\\d+"]' -o index-full-page.html
 ```
 
 ###### Output options
