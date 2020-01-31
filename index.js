@@ -273,7 +273,9 @@ while (args.length) {
 
 	var launchOptions = {
 		ignoreHTTPSErrors: ignoreHttpsErrors,
-		args: [] 
+		args: [
+			'--disable-web-security'
+		] 
 	};
 
 	if (diskCacheDir) {
@@ -422,7 +424,16 @@ while (args.length) {
 	async function injectCssExtractor() {
 
 		if (!html) {
-			html = await page.content();
+			html = await page.evaluate(function () {
+				var xhr = new XMLHttpRequest();
+				var html;
+				xhr.open("get", window.location.href, false);
+				xhr.onload = function () {
+					html = xhr.responseText;
+				};
+				xhr.send();
+				return html;
+			});
 		}
 
 		if(html.indexOf("stylesheet") === -1) {
@@ -462,10 +473,10 @@ while (args.length) {
 			var _height = await page.evaluate(function () {
 				return document.body.offsetHeight;
 			});
-			page.viewportSize = {
+			await page.setViewport({
 				width: width,
 				height: _height
-			};
+			});
 		}
 	
 		await page.on("console", async msg => {
@@ -526,7 +537,7 @@ while (args.length) {
 				result += "\n<!--\n\t" + JSON.stringify(debug) + "\n-->";
 			}
 			if (outputPath) {
-				fs.write(outputPath, result);
+				fs.writeFileSync(outputPath, result);
 			}
 			else {
 				stdout(result);

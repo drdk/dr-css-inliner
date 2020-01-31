@@ -65,6 +65,7 @@
 					text = text.replace(/\/\*[\s\S]+?\*\//g, "").replace(/[\n\r]+/g, "").replace(/url\((["']|)(\.\.\/[^"'\(\)]+)\1\)/g, function (m, quote, url) {
 						return "url(" + quote + pathRelativeToPage(base, stylesheet.href, url) + quote + ")";
 					});
+					text = text.replace(/@charset "[^"]*";/gm, "");
 					stylesheets.push(text);
 					if (left.length === 0) {
 						complete();

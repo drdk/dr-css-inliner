@@ -377,54 +377,15 @@ All loading of assets will be loaded relative to the _fake_ url - meaning they n
 
 ## Changelog
 
-### 0.8.0
-
-* Better error handling.
-* Added console options info.
-
-### 0.7.9
-
-* Extractor now waits until preloaded css (link with rel="preload" and as="style") has finished loading.
-
-### 0.7.8
-
-* README.md updated.
-
-### 0.7.7
-
-* `-ihe, --ignore-https-errors` option added.
-* npm "bin" config fixed.
-* Fixed problems with stdin and stdout (removed process.exit calls).
-
-### 0.7.6
-
-* README.md updated.
-
-### 0.7.5
-
-* `--fake-url` option fixed.
-* `-b, --browser-timeout` option added.
-
-### 0.7.4
-
-* `--width` and `--height` options fixed.
-
-### 0.7.3
-
-* `--user-agent` option fixed.
-
-### 0.7.2
-
-* `bin` config added to package.json.
-
-### 0.7.1
-
- * `-dcd, --disk-cache-dir [path]` option added.
- * `-u, --user-agent [string]` option added.
-
-### 0.7.0
+### next
 
 * Ported to Puppeteer
+* Fixed first css selector being ignored when the css file starts with a @charset declaration.
+* `bin` config added to package.json.
+* `-ihe, --ignore-https-errors` option added.
+* `-b, --browser-timeout` option added.
+* `-dcd, --disk-cache-dir [path]` option added.
+* `-u, --user-agent [string]` option added.
 
 ### 0.6.0
 
