@@ -1,3 +1,4 @@
+
 var debug = {
 	time: new Date(),
 	loadTime: null,
@@ -8,15 +9,12 @@ var debug = {
 	cssLength: 0
 };
 
+var path = require('path');
 var fs = require("fs");
-var webpage = require("webpage");
-var system = require("system");
+var process = require("process");
+var puppeteer = require("puppeteer");
 
-phantom.onError = function (msg, trace) {
-	outputError("PHANTOM ERROR", msg, trace);
-};
-
-var args = [].slice.call(system.args, 1), arg;
+var args = [].slice.call(process.argv, 2), arg;
 var html, url, fakeUrl;
 var value;
 var width = 1200;
@@ -32,13 +30,26 @@ var stripResources;
 var localStorage;
 var outputDebug;
 var outputPath;
-var scriptPath = "/extractCSS.js";
+var diskCacheDir;
+var userAgent;
+var ignoreHttpsErrors = false;
+var browserTimeout = 30000;
+var browserTimeoutHandle = null;
+var scriptPath =  __dirname + "/extractCSS.js";
 
-if (fs.isLink(system.args[0])) {
-	scriptPath = fs.readLink(system.args[0]).replace(/\/[\/]+$/, "");
-}
-else {
-	scriptPath = phantom.libraryPath + scriptPath;
+if (args.length < 1) {
+
+	try {
+	  stdout(fs.readFileSync(path.resolve(__dirname, 'README.md'), 'utf8')
+		  .match(/## Usage:([\s\S]*?)##### Examples:/i)[1]
+		  .replace(/\n```\n/g,'')
+		  .replace(/#### Options:/,'\nOptions:')
+		  .replace(/node index.js/g, 'dr-css-inliner'));
+	} catch (e) {
+	  stderr('Off-line `dr-css-inliner` help is not available!');
+	}
+
+	return;
 }
 
 while (args.length) {
@@ -55,7 +66,8 @@ while (args.length) {
 				fakeUrl = value;
 			}
 			else {
-				fail("Expected string for '--fake-url' option");
+				stderr("Expected string for '--fake-url' option");
+				return;
 			}
 			break;
 
@@ -63,10 +75,11 @@ while (args.length) {
 		case "--width":
 			value = (args.length) ? args.shift() : "";
 			if (value.match(/^\d+$/)) {
-				width = value;
+				width = parseInt(value);
 			}
 			else {
-				fail("Expected numeric value for '--width' option");
+				stderr("Expected numeric value for '--width' option");
+				return;
 			}
 			break;
 
@@ -74,21 +87,17 @@ while (args.length) {
 		case "--height":
 			value = (args.length) ? args.shift() : "";
 			if (value.match(/^\d+$/)) {
-				height = value;
+				height = parseInt(value);
 			}
 			else {
-				fail("Expected numeric value for '--height' option");
+				stderr("Expected numeric value for '--height' option");
+				return;
 			}
 			break;
 
 		case "-m":
 		case "--match-media-queries":
 			matchMQ = true;
-			break;
-
-		case "-x":
-		case "--allow-cross-domain":
-			//allowCrossDomain = true;
 			break;
 
 		case "-r":
@@ -107,7 +116,8 @@ while (args.length) {
 				required = value;
 			}
 			else {
-				fail("Expected a string for '--required-selectors' option");
+				stderr("Expected a string for '--required-selectors' option");
+				return;
 			}
 			break;
 
@@ -118,7 +128,8 @@ while (args.length) {
 				exposeStylesheets = ((value.indexOf(".") > -1) ? "" : "var ") + value;
 			}
 			else {
-				fail("Expected a string for '--expose-stylesheets' option");
+				stderr("Expected a string for '--expose-stylesheets' option");
+				return;
 			}
 			break;
 
@@ -134,7 +145,8 @@ while (args.length) {
 				cssToken = parseString(value);
 			}
 			else {
-				fail("Expected a string for '--insertion-token' option");
+				stderr("Expected a string for '--insertion-token' option");
+				return;
 			}
 			break;
 
@@ -145,7 +157,8 @@ while (args.length) {
 				cssId = value;
 			}
 			else {
-				fail("Expected a string for '--css-id' option");
+				stderr("Expected a string for '--css-id' option");
+				return;
 			}
 			break;
 
@@ -158,13 +171,13 @@ while (args.length) {
 					value = [value];
 				}
 				value = value.map(function (string) {
-					//throw new Error(string);
 					return new RegExp(string, "i");
 				});
 				stripResources = value;
 			}
 			else {
-				fail("Expected a string for '--strip-resources' option");
+				stderr("Expected a string for '--strip-resources' option");
+				return;
 			}
 			break;
 
@@ -175,7 +188,8 @@ while (args.length) {
 				localStorage = parseString(value);
 			}
 			else {
-				fail("Expected a string for '--local-storage' option");
+				stderr("Expected a string for '--local-storage' option");
+				return;
 			}
 			break;
 
@@ -191,7 +205,8 @@ while (args.length) {
 				outputPath = value;
 			}
 			else {
-				fail("Expected a string for '--output' option");
+				stderr("Expected a string for '--output' option");
+				return;
 			}
 			break;
 
@@ -200,173 +215,340 @@ while (args.length) {
 			outputDebug = true;
 			break;
 
+		case "-dcd":
+		case "--disk-cache-dir":
+			value = (args.length) ? args.shift() : "";
+			if (value) {
+				diskCacheDir = value;
+			}
+			else {
+				stderr("Expected a string for '--disk-cache-dir' option");
+				return;
+			}
+			break;
+
+		case "-u":
+		case "--user-agent":
+			value = (args.length) ? args.shift() : "";
+			if (value) {
+				userAgent = value;
+			}
+			else {
+				stderr("Expected a string for '--user-agent' option");
+				return;
+			}
+			break;
+
+		case "-ihe":
+		case "--ignore-https-errors":
+			ignoreHttpsErrors = true;
+			break;
+
+		case "-b":
+		case "--browser-timeout":
+			value = (args.length) ? args.shift() : "";
+			if (value.match(/^\d+$/)) {
+				browserTimeout = parseInt(value);
+			}
+			else {
+				stderr("Expected numeric value for '--browser-timeout' option");
+				return;
+			}
+			break;
+
 		default:
 			if (!url && !arg.match(/^--?[a-z]/)) {
 				url = arg;
 			}
 			else {
-				fail("Unknown option");
+				stderr("Unknown option");
+				return;
 			}
 			break;
 	}
 
 }
 
-var page = webpage.create();
+(async () => {
 
-page.settings.webSecurityEnabled = false;
+	var launchOptions = {
+		ignoreHTTPSErrors: ignoreHttpsErrors,
+		args: [
+			'--disable-web-security'
+		] 
+	};
 
-page.viewportSize = {
-	width: width,
-	height: height || 800
-};
-
-
-var baseUrl = url || fakeUrl;
-page.onResourceRequested = function (requestData, request) {
-	var _url = requestData.url;
-	if (_url.indexOf(baseUrl) > -1) {
-		_url = _url.slice(baseUrl.length);
+	if (diskCacheDir) {
+		launchOptions.args.push('--disk-cache-dir=' + diskCacheDir);
 	}
-	if (outputDebug && !_url.match(/^data/) && debug.requests.indexOf(_url) < 0) {
-		debug.requests.push(_url);
-	}
-	if (stripResources) {
-		var i = 0;
-		var l = stripResources.length;
-		// /http:\/\/.+?\.(jpg|png|svg|gif)$/gi
-		while (i < l) {
-			if (stripResources[i++].test(_url)) {
-				if (outputDebug) {
-					debug.stripped.push(_url);
-				}
-				request.abort();
-				break;
-			}
+
+	var browser;
+	var page;
+
+	async function closePuppeteer() {
+
+		if (page) {
+			await page.close().catch((e) => {
+				outputError("PUPPETEER ERROR", e);
+			});
+		}
+
+		if (browser) {
+			await browser.close().catch((e) => {
+				outputError("PUPPETEER ERROR", e);
+			});
+		}
+
+		if (browserTimeoutHandle) {
+			clearTimeout(browserTimeoutHandle);
 		}
 	}
-};
 
-page.onCallback = function (response) {
-	page.close();
-	if ("css" in response) {
-		var result;
-		if (cssOnly) {
-			result = response.css;
+	try {
+		browser = await puppeteer.launch(launchOptions);
+		page = await browser.newPage();
+
+		if (userAgent) {
+			await page.setUserAgent(userAgent);
 		}
-		else {
-			result = inlineCSS(response.css);
-		}
-		if (outputDebug) {
-			debug.cssLength = response.css.length;
-			debug.time = new Date() - debug.time;
-			debug.processingTime = debug.time - debug.loadTime;
-			result += "\n<!--\n\t" + JSON.stringify(debug) + "\n-->";
-		}
-		if (outputPath) {
-			fs.write(outputPath, result);
-		}
-		else {
-			system.stdout.write(result);
-		}
-		phantom.exit();
-	}
-	else {
-		system.stdout.write(response);
-		phantom.exit();
-	}
-};
 
-page.onError = function (msg, trace) {
-	outputError("PHANTOM PAGE ERROR", msg, trace);
-};
-
-page.onLoadFinished = function () {
-
-	if (!html) {
-		html = page.evaluate(function () {
-			var xhr = new XMLHttpRequest();
-			var html;
-			xhr.open("get", window.location.href, false);
-			xhr.onload = function () {
-				html = xhr.responseText;
-			};
-			xhr.send();
-			return html;
-		});
-	}
-
-	debug.loadTime = new Date() - debug.loadTime;
-
-	var options = {};
-
-	if (matchMQ) {
-		options.matchMQ = true;
-	}
-
-	if (required) {
-		options.required = required;
-	}
-
-	if (localStorage) {
-		page.evaluate(function (data) {
-			var storage = window.localStorage;
-			if (storage) {
-				for (var key in data) {
-					storage.setItem(key, data[key]);
-				}
-			}
-		}, localStorage);
-	}
-
-	if (Object.keys(options).length) {
-		page.evaluate(function (options) {
-			window.extractCSSOptions = options;
-		}, options);
-	}
-
-	if (!height) {
-		var _height = page.evaluate(function () {
-			return document.body.offsetHeight;
-		});
-		page.viewportSize = {
+		await page.setViewport({
 			width: width,
-			height: _height
-		};
+			height: height || 800
+		});
+
+		if (stripResources) {
+			await page.setRequestInterception(true);
+
+			var baseUrl = url || fakeUrl;
+		
+			page.on("request", request => {
+		
+				var _url = request.url();
+		
+				if (_url.indexOf(baseUrl) > -1) {
+					_url = _url.slice(baseUrl.length);
+				}
+		
+				if (outputDebug && !_url.match(/^data/) && debug.requests.indexOf(_url) < 0) {
+					debug.requests.push(_url);
+				}
+		
+				if (stripResources) {
+					var i = 0;
+					var l = stripResources.length;
+					// /http:\/\/.+?\.(jpg|png|svg|gif)$/gi
+					while (i < l) {
+						if (stripResources[i++].test(_url)) {
+							if (outputDebug) {
+								debug.stripped.push(_url);
+							}
+							request.abort();
+							return;
+						}
+					}
+				}
+		
+				request.continue();
+			});	
+		}
+
+		page.on("pageerror", function(err) {  
+			outputError("PAGE ERROR", err); 
+		});
+
+		page.on("error", function (err) {  
+			outputError("PAGE ERROR", err);
+		});
+
+		if(!await loadPage() || !await injectCssExtractor()) {
+			await closePuppeteer();
+		}
+
+	}
+	catch (e) {
+		outputError("EXCEPTION", e);
+		try {
+			await closePuppeteer();
+		} catch (err) {}
 	}
 
-	if (!fs.isFile(scriptPath)) {
-		fail("Unable to locate script at: " + scriptPath);
+	return;
+
+	async function loadPage() {
+
+		if (url) {
+	
+			debug.loadTime = new Date();
+	
+			await page.goto(url);
+
+			return true;
+		}
+		else {
+		
+			if (!fakeUrl) {
+				stderr("Missing \"fake-url\" option");
+				return false;
+			}
+		
+			html = fs.readFileSync(0, "utf-8");
+		
+			debug.loadTime = new Date();
+	
+			await page.setRequestInterception(true);
+	
+			page.once("request", req => {
+			  req.respond({
+				body: "<!DOCTYPE html><html><head><title>Empty page</title></head><body><div>Empty page</div></body></html>"
+			  });
+			});
+	
+			await page.goto(fakeUrl);
+	
+			if (!stripResources) {
+				// disable request interception to allow caching
+				await page.setRequestInterception(false);
+			}
+	
+			if (diskCacheDir) {
+				await page.setCacheEnabled(true);
+			}
+	
+			await page.setContent(html);
+
+			return true;
+		}	
 	}
 
-	var injection = page.injectJs(scriptPath);
-	if (!injection) {
-		fail("Unable to inject script in page");
+	async function injectCssExtractor() {
+
+		if (!html) {
+			html = await page.evaluate(function () {
+				var xhr = new XMLHttpRequest();
+				var html;
+				xhr.open("get", window.location.href, false);
+				xhr.onload = function () {
+					html = xhr.responseText;
+				};
+				xhr.send();
+				return html;
+			});
+		}
+
+		if(html.indexOf("stylesheet") === -1) {
+			return false;
+		}
+
+		debug.loadTime = new Date() - debug.loadTime;
+	
+		var options = {};
+	
+		if (matchMQ) {
+			options.matchMQ = true;
+		}
+	
+		if (required) {
+			options.required = required;
+		}
+	
+		if (localStorage) {
+			await page.evaluate(function (data) {
+				var storage = window.localStorage;
+				if (storage) {
+					for (var key in data) {
+						storage.setItem(key, data[key]);
+					}
+				}
+			}, localStorage);
+		}
+	
+		if (Object.keys(options).length) {
+			await page.evaluate(function (options) {
+				window.extractCSSOptions = options;
+			}, options);
+		}
+	
+		if (!height) {
+			var _height = await page.evaluate(function () {
+				return document.body.offsetHeight;
+			});
+			await page.setViewport({
+				width: width,
+				height: _height
+			});
+		}
+	
+		await page.on("console", async msg => {
+
+			if (msg.args().length !== 2) {
+				return;
+			}
+
+			if (await msg.args()[0].jsonValue() !== "_extractedcss") {
+				return;
+			}
+
+			let response = await msg.args()[1].jsonValue();
+
+			await closePuppeteer();
+
+			await cssExtractorCallback(response);
+		});
+
+		if (!fs.lstatSync(scriptPath).isFile()) {
+			stderr("Unable to locate script at: " + scriptPath);
+			return false;
+		}
+		await page.addScriptTag({path: scriptPath});
+
+		if (browserTimeout) {
+			browserTimeoutHandle = setTimeout(async function () {
+				await closePuppeteer();
+				stderr("Browser timeout");
+			}, browserTimeout);
+		}
+
+		return true;
 	}
 
-};
+	async function cssExtractorCallback(response) {
+		
+		if (!response.css) {
+			stderr("Browser did not return any CSS");
+			return;
+		}
 
-if (url) {
+		if ("css" in response) {
+			var result;
+			if (cssOnly) {
+				result = response.css;
+			}
+			else {
+				result = inlineCSS(response.css)
+				if (!result) {
+					return;
+				}
+			}
+			if (outputDebug) {
+				debug.cssLength = response.css.length;
+				debug.time = new Date() - debug.time;
+				debug.processingTime = debug.time - debug.loadTime;
+				result += "\n<!--\n\t" + JSON.stringify(debug) + "\n-->";
+			}
+			if (outputPath) {
+				fs.writeFileSync(outputPath, result);
+			}
+			else {
+				stdout(result);
+			}
+		}
+		else {
+			stdout(response);
+		}
+	};
 
-	debug.loadTime = new Date();
-	page.open(url);
-
-}
-else {
-
-	if (!fakeUrl) {
-		fail("Missing \"fake-url\" option");
-	}
-
-	html = system.stdin.read();
-	system.stdin.close();
-
-	debug.loadTime = new Date();
-	page.setContent(html, fakeUrl);
-
-}
-
-
+})();
 
 function inlineCSS(css) {
 
@@ -409,7 +591,8 @@ function inlineCSS(css) {
 	var length = cssToken.length;
 
 	if (index == -1) {
-		fail("token not found:\n" + cssToken);
+		stderr("token not found:\n" + cssToken);
+		return false;
 	}
 
 	var replacement = "<style " + ((cssId) ? "id=\"" + cssId + "\" " : "") + "media=\"screen\">\n\t\t\t" + css + "\n\t\t</style>\n";
@@ -430,33 +613,20 @@ function inlineCSS(css) {
 
 }
 
-function outputError (context, msg, trace) {
-	var errMsg = "";
-	var errStack = [msg];
-	var errInRemoteScript = false;
-	if (trace && trace.length) {
-		errStack.push("TRACE:");
-		trace.forEach(function (t) {
-			var source = t.file || t.sourceURL;
-			if (!errInRemoteScript && source != scriptPath) {
-				errInRemoteScript = true;
-			}
-			errStack.push(" -> " + source + ": " + t.line + (t.function ? " (in function " + t.function + ")" : ""));
-		});
-	}
-	errMsg = errStack.join("\n");
-	if (errInRemoteScript) {
-		debug.errors.push(errMsg);
-	}
-	else {
-		fail(context + ": " + errStack.join("\n"));
-	}
-	
+function outputError(context, msg) {
+
+	var error = msg.stack ? msg.stack : msg;
+
+	debug.errors.push(error);
+	stderr(context + ": " + error);
 }
 
-function fail(message) {
-	system.stderr.write(message);
-	phantom.exit(1);
+function stdout(message) {
+	process.stdout.write(message + "\n");
+}
+
+function stderr(message) {
+	process.stderr.write(message + "\n");
 }
 
 function parseString(value) {

@@ -1,14 +1,20 @@
 {
   "name": "dr-css-inliner",
   "version": "0.6.0",
-  "description": "PhantomJS script to inline above-the-fold CSS for a webpage.",
+  "description": "Puppeteer script to inline above-the-fold CSS for a webpage.",
   "main": "index.js",
+  "bin": {
+    "dr-css-inliner": "bin/index.js"
+  },
+  "dependencies": {
+    "puppeteer": "^2.0.0"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/drdk/dr-css-inliner.git"
   },
   "keywords": [
-    "phantomjs",
+    "puppeteer",
     "above-the-fold",
     "css"
   ],

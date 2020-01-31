@@ -3,7 +3,7 @@
 	var html = doc.documentElement;
 	var width, height;
 	var options = global.extractCSSOptions;
-	var matchMQ, allowCrossDomain, required;
+	var matchMQ, required;
 	var stylesheets = [];
 	var mediaStylesheets = [];
 	var left;
@@ -13,7 +13,6 @@
 		if ("matchMQ" in options) {
 			matchMQ = options.matchMQ;
 		}
-		allowCrossDomain = true;
 		if ("required" in options) {
 			required = options.required;
 
@@ -23,13 +22,28 @@
 		}
 	}
 
-	function init() {
-		if (isRunning) {
+	function init(force) {
+
+		if (isRunning && !force) {
 			return;
 		}
 		isRunning = true;
 
-		//document.boo();
+		var links = doc.querySelectorAll("link");
+
+		var cssLinksStillLoading = Array.prototype.slice.call(links).filter(function (link) {
+			if (link.rel == "preload" && link.as == "style") {
+				return true;
+			}
+			return false;
+		});
+
+		if (cssLinksStillLoading.length > 0) {
+			setTimeout(function () {
+				init(true);
+			}, 50);
+			return;
+		}
 
 		width = html.offsetWidth;
 		height = global.innerHeight;
@@ -42,7 +56,7 @@
 		var host = global.location.protocol + "//" + global.location.host;
 
 		mediaStylesheets.forEach(function (stylesheet) {
-			if ((stylesheet.href && stylesheet.href.indexOf(host) === 0) || (stylesheet.href && allowCrossDomain)) {
+			if (stylesheet.href) {
 				fetchStylesheet(stylesheet.href, function (text) {
 					var index = left.indexOf(stylesheet);
 					if (index > -1) {
@@ -51,6 +65,7 @@
 					text = text.replace(/\/\*[\s\S]+?\*\//g, "").replace(/[\n\r]+/g, "").replace(/url\((["']|)(\.\.\/[^"'\(\)]+)\1\)/g, function (m, quote, url) {
 						return "url(" + quote + pathRelativeToPage(base, stylesheet.href, url) + quote + ")";
 					});
+					text = text.replace(/@charset "[^"]*";/gm, "");
 					stylesheets.push(text);
 					if (left.length === 0) {
 						complete();
@@ -83,12 +98,8 @@
 				return outputRules(filterCSS(css, elements));
 			}).join("");
 
-			if (typeof global.callPhantom === "function") {
-				global.callPhantom({ css: CSS });
-			}
-			else if (global.console) {
-				console.log({ css: CSS });
-			}
+			console.log('_extractedcss', {css: CSS });
+
 			isRunning = false;
 		}
 
