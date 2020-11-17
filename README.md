@@ -1,3 +1,14 @@
+# DEPRECATED
+
+This repo is no longer maintained.
+
+If you still need what it provided you should take a look at this fork:
+
+https://github.com/MichaelRoosz/dr-css-inliner
+
+----
+
+
 dr-css-inliner
 ================
 
